@@ -1,0 +1,269 @@
+import React from 'react';
+import { useStore } from '../store/useStore';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { 
+  Activity, Crosshair, Shield, ShoppingCart, Swords, 
+  BookOpen, CalendarDays, Wallet, Settings, Flame, 
+  ChevronRight, LayoutGrid, Users, Zap, Terminal, Cpu, BrainCircuit
+} from 'lucide-react';
+import { cn, getRank } from '../lib/utils';
+import { motion } from 'framer-motion';
+
+export function HubView() {
+  const { setView } = useStore();
+  const userStats = useLiveQuery(() => db.userStats.get(1));
+  const quests = useLiveQuery(() => db.quests.toArray());
+  
+  const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
+  const rankColor = getRank(level).color;
+  const themeColor = userStats?.selectedColor || rankColor;
+  const uiTheme = userStats?.uiTheme || 'default';
+
+  const activeQuests = quests?.filter(q => !q.completed).length || 0;
+  const credits = userStats?.credits || 0;
+
+  const categories = [
+    {
+      title: "CORE SYSTEMS",
+      items: [
+        { id: 'status', icon: Activity, label: 'Status Window', desc: 'Matrix & Attributes' },
+        { id: 'quests', icon: Shield, label: 'Daily Quests', desc: 'Active Objectives' },
+        { id: 'scheduler', icon: CalendarDays, label: 'Directives', desc: 'Time Management' },
+      ]
+    },
+    {
+      title: "OPERATIONS",
+      items: [
+        { id: 'dungeons', icon: Swords, label: 'Instances', desc: 'Combat & Training' },
+        { id: 'tactical', icon: BrainCircuit, label: 'Mission Analytics', desc: 'Goal Tracking' },
+        { id: 'reviews', icon: BookOpen, label: 'Weekly Review', desc: 'System Analysis' },
+      ]
+    },
+    {
+      title: "RESOURCES",
+      items: [
+        { id: 'nutrition', icon: Flame, label: 'Metabolism', desc: 'Vessel Fueling' },
+        { id: 'store', icon: ShoppingCart, label: 'System Store', desc: 'Equipment & Items' },
+        { id: 'ledger', icon: Wallet, label: 'Treasury', desc: 'Credit Management' },
+      ]
+    },
+    {
+      title: "SYSTEM",
+      items: [
+        { id: 'settings', icon: Settings, label: 'Settings', desc: 'Interface & Identity' },
+      ]
+    }
+  ];
+
+  return (
+    <div className="space-y-8 pb-12">
+      <header className="border-b border-[#262626] pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 relative">
+        {uiTheme === 'monarch' && (
+          <div className="absolute top-0 right-1/4 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        )}
+        {uiTheme === 's_class' && (
+          <div className="absolute top-0 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+        )}
+        <div className="relative z-10">
+          <div className="flex items-center space-x-3 mb-2">
+            <Terminal className="w-5 h-5 text-[#A3A3A3]" />
+            <span className="text-xs font-mono text-[#A3A3A3] tracking-widest uppercase">
+              {uiTheme === 'monarch' ? 'Monarch Protocol Initialized' : 
+               uiTheme === 's_class' ? 'S-Class Subsystems Online' : 
+               'System Initialization Complete'}
+            </span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-mono font-bold tracking-tight text-white flex items-center" style={{ textShadow: `0 0 20px ${themeColor}40` }}>
+            <LayoutGrid className="w-8 h-8 md:w-10 md:h-10 mr-4" style={{ color: themeColor }} />
+            {uiTheme === 'monarch' ? 'MONARCH COMMAND' : 
+             uiTheme === 's_class' ? 'S-CLASS HUB' : 
+             'COMMAND HUB'}
+          </h2>
+        </div>
+        <div className={cn(
+          "flex items-center space-x-2 border px-4 py-2 rounded-lg relative z-10 transition-colors duration-500",
+          uiTheme === 'monarch' ? "bg-indigo-950/30 border-indigo-500/50" :
+          uiTheme === 's_class' ? "bg-purple-950/30 border-purple-500/50" :
+          "bg-[#141414] border-[#262626]"
+        )}>
+          <div className={cn(
+            "w-2 h-2 rounded-full animate-pulse",
+            uiTheme === 'monarch' ? "bg-indigo-400" :
+            uiTheme === 's_class' ? "bg-purple-400" :
+            "bg-green-500"
+          )} />
+          <span className={cn(
+            "text-xs font-mono tracking-widest",
+            uiTheme === 'monarch' ? "text-indigo-400" :
+            uiTheme === 's_class' ? "text-purple-400" :
+            "text-green-500"
+          )}>
+            {uiTheme === 'monarch' ? 'MONARCH ONLINE' : 
+             uiTheme === 's_class' ? 'S-CLASS ONLINE' : 
+             'SYSTEM ONLINE'}
+          </span>
+        </div>
+      </header>
+
+      {/* Quick Stats Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-4 relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#262626]"></div>
+          <div className="text-[#A3A3A3] text-[10px] font-mono tracking-widest mb-1 flex items-center uppercase">
+            <Cpu className="w-3 h-3 mr-1" />
+            CURRENT LEVEL
+          </div>
+          <div className="text-2xl font-mono font-bold text-white">{level}</div>
+          <div className="absolute bottom-0 left-0 h-1 bg-[#141414] w-full">
+            <div className="h-full" style={{ width: `${((userStats?.xp || 0) % 1000) / 10}%`, backgroundColor: themeColor }} />
+          </div>
+        </div>
+        
+        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-4 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#262626]"></div>
+          <div className="text-[#A3A3A3] text-[10px] font-mono tracking-widest mb-1 flex items-center uppercase">
+            <Wallet className="w-3 h-3 mr-1" />
+            TREASURY
+          </div>
+          <div className="text-2xl font-mono font-bold text-yellow-500">{credits.toLocaleString()} <span className="text-sm text-yellow-500/50">G</span></div>
+        </div>
+
+        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-4 relative overflow-hidden group">
+          <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#262626]"></div>
+          <div className="text-[#A3A3A3] text-[10px] font-mono tracking-widest mb-1 flex items-center uppercase">
+            <Shield className="w-3 h-3 mr-1" />
+            ACTIVE QUESTS
+          </div>
+          <div className="text-2xl font-mono font-bold text-blue-400">{activeQuests}</div>
+        </div>
+
+        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-4 relative overflow-hidden group">
+          <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#262626]"></div>
+          <div className="text-[#A3A3A3] text-[10px] font-mono tracking-widest mb-1 flex items-center uppercase">
+            <Zap className="w-3 h-3 mr-1" />
+            ENERGY
+          </div>
+          <div className="text-2xl font-mono font-bold text-purple-400">100<span className="text-sm text-purple-400/50">%</span></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* System Logs */}
+        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-6 font-mono relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#262626]"></div>
+          <h3 className="text-xs text-[#A3A3A3] tracking-widest uppercase mb-4 flex items-center">
+            <Terminal className="w-4 h-4 mr-2" />
+            SYSTEM LOGS
+          </h3>
+          <div className="space-y-2 text-[10px] text-[#525252]">
+            <div className="flex justify-between">
+              <span>[INFO] CORE_SYSTEM_INITIALIZED</span>
+              <span>{new Date().toISOString().split('T')[0]}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>[INFO] AUTH_PROTOCOL_ACTIVE</span>
+              <span>SECURE</span>
+            </div>
+            <div className="flex justify-between">
+              <span>[INFO] SYNC_ENGINE_READY</span>
+              <span>STABLE</span>
+            </div>
+            <div className="flex justify-between">
+              <span>[INFO] ALLY_NETWORK_SCANNING</span>
+              <span>ACTIVE</span>
+            </div>
+            <div className="flex justify-between text-green-500/50">
+              <span>[STATUS] SYSTEM_OPTIMIZED</span>
+              <span>100%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* World Status */}
+        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-6 font-mono relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#262626]"></div>
+          <h3 className="text-xs text-[#A3A3A3] tracking-widest uppercase mb-4 flex items-center">
+            <Activity className="w-4 h-4 mr-2" />
+            WORLD STATUS
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-[10px] mb-1">
+                <span>GLOBAL THREAT LEVEL</span>
+                <span className="text-yellow-500">MODERATE</span>
+              </div>
+              <div className="h-1 bg-[#141414] rounded-sm overflow-hidden">
+                <div className="h-full bg-yellow-500 w-1/3" />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-[10px] mb-1">
+                <span>ALLY DENSITY</span>
+                <span className="text-blue-400">HIGH</span>
+              </div>
+              <div className="h-1 bg-[#141414] rounded-sm overflow-hidden">
+                <div className="h-full bg-blue-400 w-3/4" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {categories.map((cat, idx) => (
+          <motion.div 
+            key={cat.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.1 }}
+            className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-6 relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#262626]"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#262626]"></div>
+            
+            <h3 className="text-xs font-mono text-white tracking-[0.2em] mb-6 flex items-center uppercase">
+              <div className="w-1 h-4 mr-3 rounded-sm" style={{ backgroundColor: themeColor }} />
+              {cat.title}
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-3 relative z-10">
+              {cat.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setView(item.id as any)}
+                  className={cn(
+                    "group flex items-center justify-between p-4 bg-[#141414] border rounded-sm transition-all duration-300 text-left hover:shadow-lg relative overflow-hidden",
+                    uiTheme === 'monarch' ? "border-indigo-900/30 hover:border-indigo-500/50" :
+                    uiTheme === 's_class' ? "border-purple-900/30 hover:border-purple-500/50" :
+                    "border-[#262626] hover:border-[#333]"
+                  )}
+                  style={{ '--hover-color': themeColor } as any}
+                >
+                  {/* High rank hover glow */}
+                  {(uiTheme === 'monarch' || uiTheme === 's_class') && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+                  )}
+                  
+                  <div className="flex items-center space-x-4 relative z-10">
+                    <div className={cn(
+                      "p-2.5 bg-[#0A0A0A] border rounded-sm group-hover:scale-110 transition-transform duration-300 shadow-inner",
+                      uiTheme === 'monarch' ? "border-indigo-900/50 group-hover:border-indigo-500" :
+                      uiTheme === 's_class' ? "border-purple-900/50 group-hover:border-purple-500" :
+                      "border-[#262626] group-hover:border-[var(--hover-color)]"
+                    )}>
+                      <item.icon className="w-5 h-5 transition-colors duration-300" style={{ color: themeColor }} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-mono font-bold text-white group-hover:text-white transition-colors uppercase tracking-widest">{item.label}</div>
+                      <div className="text-[10px] font-mono text-[#A3A3A3] uppercase tracking-widest mt-0.5">{item.desc}</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#262626] group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}

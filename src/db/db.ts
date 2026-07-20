@@ -1,0 +1,425 @@
+import Dexie, { Table } from 'dexie';
+import { toast } from 'sonner';
+
+export interface UserStats {
+  id: number;
+  STR: number;
+  VIT: number;
+  AGI: number;
+  INT: number;
+  SEN: number;
+  chestXp?: number;
+  backXp?: number;
+  legsXp?: number;
+  armsXp?: number;
+  shouldersXp?: number;
+  coreXp?: number;
+  cardioXp?: number;
+  credits: number;
+  xp: number;
+  lastResetDate: string;
+  name?: string;
+  avatar?: string;
+  height?: number;
+  age?: number;
+  gender?: 'male' | 'female' | 'other';
+  notes?: string;
+  fitnessGoal?: 'lose' | 'maintain' | 'build';
+  activityLevel?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  role?: string;
+  uiTheme?: string;
+  backgroundImage?: string;
+  useRankTheme?: boolean;
+  selectedColor?: string;
+  uid?: string;
+  currentStreak?: number;
+  longestStreak?: number;
+  lastCheckInDate?: string;
+  
+  // Advanced metabolic and game difficulty parameters
+  macroGoalRatio?: 'balanced' | 'high_protein' | 'keto' | 'custom';
+  customProtein?: number;
+  customCarbs?: number;
+  customFat?: number;
+  gameDifficulty?: 'casual' | 'normal' | 'hardcore';
+}
+
+export interface Quest {
+  id?: number;
+  title: string;
+  attribute: string;
+  targetValue: number;
+  currentValue: number;
+  type: 'daily';
+  completed: boolean;
+  date: string; // YYYY-MM-DD
+  baseReward: number;
+  isRecurring?: boolean;
+}
+
+export interface Dungeon {
+  id?: number;
+  title: string;
+  totalHealth: number;
+  currentHealth: number;
+  status: 'active' | 'cleared';
+  shadowExtracted: boolean;
+  rewardCredits?: number;
+  rewardXp?: number;
+}
+
+export interface InventoryItem {
+  id?: number;
+  name: string;
+  type: 'item' | 'shadow';
+  attributeBoosts: Partial<Record<'STR' | 'VIT' | 'AGI' | 'INT' | 'SEN', number>>;
+  equipped: boolean;
+}
+
+export interface ShopItem {
+  id?: number;
+  name: string;
+  cost: number;
+  attributeBoosts: Partial<Record<'STR' | 'VIT' | 'AGI' | 'INT' | 'SEN', number>>;
+  purchased: boolean;
+}
+
+export interface VesselLog {
+  id?: number;
+  date: string;
+  weight?: number;
+  bodyFat?: number;
+  sleepHours?: number;
+  stressLevel?: 1 | 2 | 3 | 4 | 5;
+}
+
+export interface WeeklyReview {
+  id?: number;
+  weekStartDate: string;
+  accomplishments: string;
+  challenges: string;
+  intentions: string;
+  status: 'pending' | 'completed';
+}
+
+export interface Task {
+  id?: number;
+  title: string;
+  date: string;
+  time: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
+  xpReward?: number;
+}
+
+export interface LedgerEntry {
+  id?: number;
+  date: string;
+  amount: number;
+  type: 'income' | 'expense';
+  description: string;
+  category?: string;
+}
+
+export interface NutritionLog {
+  id?: number;
+  date: string;
+  type: 'food' | 'exercise' | 'water';
+  name: string;
+  calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  duration?: number;
+  muscleGroup?: 'chest' | 'back' | 'legs' | 'arms' | 'shoulders' | 'core' | 'cardio';
+  amount?: number; // For water in ml
+}
+
+export interface FoodTemplate {
+  id?: number;
+  name: string;
+  calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+}
+
+export interface QuestTemplate {
+  id?: number;
+  title: string;
+  attribute: 'STR' | 'VIT' | 'AGI' | 'INT' | 'SEN';
+  targetValue: number;
+  baseReward: number;
+  isRecurring?: boolean;
+}
+
+export interface TacticalLog {
+  id?: number;
+  date: string;
+  game: string;
+  focusArea: string;
+  result: 'win' | 'loss' | 'draw';
+  kills: number;
+  deaths: number;
+  notes?: string;
+}
+
+export interface MissionLog {
+  id?: number;
+  date: string;
+  title: string;
+  category: 'study' | 'work' | 'personal' | 'fitness';
+  result: 'success' | 'failure' | 'partial';
+  completionRate: number; // 0-100
+  noiseLevel: number; // 0-100, representing distractions/friction
+  notes?: string;
+}
+
+export class SystemDatabase extends Dexie {
+  userStats!: Table<UserStats, number>;
+  quests!: Table<Quest, number>;
+  dungeons!: Table<Dungeon, number>;
+  inventory!: Table<InventoryItem, number>;
+  shopItems!: Table<ShopItem, number>;
+  vesselLogs!: Table<VesselLog, number>;
+  weeklyReviews!: Table<WeeklyReview, number>;
+  tasks!: Table<Task, number>;
+  ledger!: Table<LedgerEntry, number>;
+  nutritionLogs!: Table<NutritionLog, number>;
+  tacticalLogs!: Table<TacticalLog, number>;
+  foodTemplates!: Table<FoodTemplate, number>;
+  questTemplates!: Table<QuestTemplate, number>;
+  missionLogs!: Table<MissionLog, number>;
+
+  constructor() {
+    super('SystemDB');
+    this.version(1).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+    });
+    this.version(2).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status'
+    });
+    this.version(3).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type'
+    });
+    this.version(4).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type'
+    });
+    this.version(5).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type'
+    });
+    this.version(6).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type',
+      tacticalLogs: '++id, date, game'
+    });
+    this.version(7).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type',
+      tacticalLogs: '++id, date, game',
+      foodTemplates: '++id, name'
+    });
+    this.version(8).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type',
+      tacticalLogs: '++id, date, game',
+      foodTemplates: '++id, name',
+      questTemplates: '++id, title'
+    });
+    this.version(9).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type',
+      tacticalLogs: '++id, date, game',
+      foodTemplates: '++id, name',
+      questTemplates: '++id, title',
+      missionLogs: '++id, date, category'
+    });
+  }
+}
+
+export const db = new SystemDatabase();
+
+// Initialize default data
+db.on('populate', async () => {
+  await db.userStats.add({
+    id: 1,
+    STR: 10,
+    VIT: 10,
+    AGI: 10,
+    INT: 10,
+    SEN: 10,
+    credits: 0,
+    xp: 0,
+    lastResetDate: new Date().toISOString().split('T')[0],
+    uid: crypto.randomUUID()
+  });
+
+  await db.shopItems.bulkAdd([
+    { name: 'Herman Miller Chair', cost: 5000, attributeBoosts: { INT: 10 }, purchased: false },
+    { name: 'Mechanical Keyboard', cost: 1500, attributeBoosts: { AGI: 5 }, purchased: false },
+    { name: 'Noise Cancelling Headphones', cost: 3000, attributeBoosts: { SEN: 8 }, purchased: false },
+    { name: 'Premium Gym Pass', cost: 2000, attributeBoosts: { STR: 5, VIT: 5 }, purchased: false },
+  ]);
+
+  await db.quests.bulkAdd([
+    { title: '100 Pushups', attribute: 'STR', targetValue: 100, currentValue: 0, type: 'daily', completed: false, date: new Date().toISOString().split('T')[0], baseReward: 50 },
+    { title: '10km Run', attribute: 'VIT', targetValue: 10, currentValue: 0, type: 'daily', completed: false, date: new Date().toISOString().split('T')[0], baseReward: 100 },
+    { title: 'Read 1 Chapter', attribute: 'INT', targetValue: 1, currentValue: 0, type: 'daily', completed: false, date: new Date().toISOString().split('T')[0], baseReward: 30 },
+  ]);
+});
+
+export async function addXp(amount: number, attribute?: string) {
+  const stats = await db.userStats.get(1);
+  if (!stats) return;
+
+  const oldLevel = Math.floor(stats.xp / 1000) + 1;
+  const newXp = stats.xp + amount;
+  const newLevel = Math.floor(newXp / 1000) + 1;
+  const levelsGained = newLevel - oldLevel;
+
+  const updates: Partial<UserStats> = { xp: newXp };
+  
+  if (attribute) {
+    const attr = attribute.toUpperCase();
+    if (['STR', 'VIT', 'AGI', 'INT', 'SEN'].includes(attr)) {
+      const key = attr as 'STR' | 'VIT' | 'AGI' | 'INT' | 'SEN';
+      updates[key] = (stats[key] || 0) + Math.max(1, Math.floor(amount / 10));
+    } else {
+      // Handle muscle groups (e.g., 'chest' -> 'chestXp')
+      const muscleKey = `${attribute.toLowerCase()}Xp` as keyof UserStats;
+      (updates as any)[muscleKey] = ((stats as any)[muscleKey] || 0) + amount;
+    }
+  }
+
+  if (levelsGained > 0) {
+    const { getRank } = await import('../lib/utils');
+    const { color: themeColor } = getRank(newLevel);
+    
+    // Use the store to trigger the modal
+    const { useStore } = await import('../store/useStore');
+    useStore.getState().setLevelUpModal(newLevel);
+    
+    toast.success(`LEVEL UP! You reached level ${newLevel}.`, {
+      style: {
+        background: '#141414',
+        border: `1px solid ${themeColor}`,
+        color: themeColor,
+        fontFamily: 'monospace'
+      }
+    });
+  }
+
+  await db.userStats.update(1, updates);
+  await updateStreak(); // Update streak when user gets XP!
+}
+
+export async function updateStreak() {
+  const stats = await db.userStats.get(1);
+  if (!stats) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (stats.lastCheckInDate === today) {
+    // Already checked in today
+    return;
+  }
+
+  let currentStreak = stats.currentStreak || 0;
+  let longestStreak = stats.longestStreak || 0;
+  
+  if (stats.lastCheckInDate) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    if (stats.lastCheckInDate === yesterdayStr) {
+      // Checked in yesterday, continue streak
+      currentStreak++;
+    } else {
+      // Missed a day or more, reset score
+      currentStreak = 1;
+    }
+  } else {
+    currentStreak = 1; // First check in
+  }
+
+  if (currentStreak > longestStreak) {
+    longestStreak = currentStreak;
+  }
+
+  await db.userStats.update(1, {
+    currentStreak,
+    longestStreak,
+    lastCheckInDate: today
+  });
+}
+

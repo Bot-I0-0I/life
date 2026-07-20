@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@layer utilities {
+  /* Global scrollbar hiding */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer base {
+  .light-theme {
+    background-color: #f4f4f5 !important;
+    background-image: none !important;
+    color: #09090b !important;
+  }
+  .light-theme .bg-\[\#111\] {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+  .light-theme .bg-\[\#0A0A0A\] {
+    background-color: #f4f4f5 !important;
+    background-image: none !important;
+  }
+  .light-theme .bg-\[\#141414\] {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+  .light-theme .text-white {
+    color: #09090b !important;
+  }
+  .light-theme .text-\[\#E5E5E5\] {
+    color: #18181b !important;
+  }
+  .light-theme .text-\[\#A3A3A3\] {
+    color: #71717a !important;
+  }
+  .light-theme .border-\[\#262626\] {
+    border-color: #e4e4e7 !important;
+  }
+  .light-theme .border-\[\#333\] {
+    border-color: #d4d4d8 !important;
+  }
+  .light-theme .bg-\[\#1A1A1A\] {
+    background-color: #e4e4e7 !important;
+  }
+  .light-theme .bg-\[\#262626\] {
+    background-color: #d4d4d8 !important;
+  }
+  .light-theme .hover\:bg-\[\#1A1A1A\]:hover {
+    background-color: #e4e4e7 !important;
+  }
+  .light-theme .hover\:border-\[\#333\]:hover {
+    border-color: #d4d4d8 !important;
+  }
+  .light-theme .bg-black {
+    background-color: #f4f4f5 !important;
+  }
+}
