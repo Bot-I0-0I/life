@@ -6,12 +6,32 @@
     <title>Life Control System</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
     <script>
+      (function() {
+        try {
+          var _f = window.fetch;
+          var defineFetch = function(target) {
+            if (!target) return;
+            try {
+              Object.defineProperty(target, 'fetch', {
+                get: function() { return _f; },
+                set: function(v) { _f = v; },
+                configurable: true,
+                enumerable: true
+              });
+            } catch(e) {}
+          };
+          defineFetch(window);
+          if (typeof globalThis !== 'undefined') defineFetch(globalThis);
+          if (typeof Window !== 'undefined' && Window.prototype) defineFetch(Window.prototype);
+        } catch (e) {}
+      })();
+
       const originalError = console.error;
       console.error = function(...args) {
-        if (args[0] && typeof args[0] === 'string' && (args[0].includes('[vite] failed to connect to websocket') || args[0].includes('WebSocket closed without opened'))) {
+        if (args[0] && typeof args[0] === 'string' && (args[0].includes('[vite] failed to connect to websocket') || args[0].includes('WebSocket closed without opened') || args[0].includes('Cannot set property fetch'))) {
           return;
         }
-        if (args[1] && args[1].message && args[1].message.includes('WebSocket')) {
+        if (args[1] && args[1].message && (args[1].message.includes('WebSocket') || args[1].message.includes('Cannot set property fetch'))) {
           return;
         }
         originalError.apply(console, args);
@@ -20,13 +40,13 @@
         const reason = event.reason;
         if (reason) {
           const msg = typeof reason === 'string' ? reason : (reason.message || '');
-          if (msg.includes('WebSocket')) {
+          if (msg.includes('WebSocket') || msg.includes('Cannot set property fetch')) {
             event.preventDefault();
           }
         }
       });
       window.addEventListener('error', function(event) {
-        if (event.message && event.message.includes('WebSocket')) {
+        if (event.message && (event.message.includes('WebSocket') || event.message.includes('Cannot set property fetch'))) {
           event.preventDefault();
         }
       });

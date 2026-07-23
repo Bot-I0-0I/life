@@ -3,20 +3,87 @@ import { Utensils, Plus, Shield, CheckCircle, Flame, Beef, Wheat, Droplets, Book
 import { cn } from '../lib/utils';
 
 export const PAKISTANI_FOOD_ITEMS = [
+  // Staples & Breads
   { name: 'Roti (Whole Wheat Chapati)', calories: 120, protein: 4, carbs: 24, fat: 1, portion: '1 Medium (40g)' },
+  { name: 'Tandoori Naan', calories: 260, protein: 8, carbs: 48, fat: 4, portion: '1 Piece (90g)' },
+  { name: 'Roghani Naan (Sesame & Butter)', calories: 340, protein: 9, carbs: 52, fat: 12, portion: '1 Piece (110g)' },
+  { name: 'Paratha (Whole Wheat / Ghee)', calories: 290, protein: 5, carbs: 38, fat: 13, portion: '1 Piece' },
+  { name: 'Aloo Paratha', calories: 350, protein: 7, carbs: 50, fat: 14, portion: '1 Piece (150g)' },
+  { name: 'Puri (Halwa Puri Paratha)', calories: 210, protein: 3, carbs: 22, fat: 12, portion: '1 Piece' },
+
+  // Rice & Lentils
+  { name: 'Boiled White Rice (Basmati)', calories: 200, protein: 4, carbs: 44, fat: 0.5, portion: '1 Cup (150g)' },
   { name: 'Dal Chawal (Lentils & Rice)', calories: 450, protein: 12, carbs: 85, fat: 6, portion: '1 Plate (350g)' },
   { name: 'Chicken Biryani', calories: 550, protein: 28, carbs: 75, fat: 15, portion: '1 Plate (300g)' },
-  { name: 'Egg Shami Kabab', calories: 150, protein: 10, carbs: 6, fat: 9, portion: '1 Piece (60g)' },
+  { name: 'Mutton Biryani', calories: 620, protein: 32, carbs: 74, fat: 22, portion: '1 Plate (300g)' },
+  { name: 'Beef Pulao (Yakhni Pulao)', calories: 510, protein: 26, carbs: 68, fat: 16, portion: '1 Plate (300g)' },
+  { name: 'Daal Tadka (Yellow Lentils)', calories: 190, protein: 9, carbs: 26, fat: 6, portion: '1 Cup (200g)' },
+  { name: 'Daal Makhani / Mash Daal', calories: 240, protein: 11, carbs: 28, fat: 10, portion: '1 Cup (200g)' },
+
+  // Chicken & Meat Curries
   { name: 'Chicken Karahi', calories: 380, protein: 32, carbs: 6, fat: 24, portion: '1 Portion (200g)' },
+  { name: 'Chicken Jalfrezi', calories: 340, protein: 30, carbs: 12, fat: 18, portion: '1 Portion (200g)' },
+  { name: 'Mutton Karahi', calories: 460, protein: 34, carbs: 4, fat: 34, portion: '1 Portion (200g)' },
+  { name: 'Mutton Kunna (Clay Pot Mutton)', calories: 490, protein: 36, carbs: 6, fat: 35, portion: '1 Bowl (250g)' },
+  { name: 'Chicken Handi (Boneless Creamy)', calories: 420, protein: 30, carbs: 8, fat: 30, portion: '1 Portion (200g)' },
+  { name: 'Beef Nihari', calories: 520, protein: 36, carbs: 12, fat: 36, portion: '1 Bowl (300g)' },
+  { name: 'Beef Keema Mattar (Minced Beef with Peas)', calories: 360, protein: 31, carbs: 10, fat: 22, portion: '1 Bowl (200g)' },
+  { name: 'Mutton Paya Curry', calories: 480, protein: 38, carbs: 5, fat: 34, portion: '1 Bowl (350g)' },
+  { name: 'Chicken Haleem', calories: 410, protein: 30, carbs: 48, fat: 12, portion: '1 Bowl (300g)' },
+  { name: 'Beef Haleem', calories: 450, protein: 34, carbs: 46, fat: 15, portion: '1 Bowl (300g)' },
+  { name: 'Chicken Korma', calories: 390, protein: 26, carbs: 10, fat: 28, portion: '1 Portion (200g)' },
+  { name: 'Anda Ghotala (Eggs & Spiced Keema)', calories: 380, protein: 24, carbs: 8, fat: 28, portion: '1 Plate (200g)' },
+  { name: 'Khagina (Pakistani Scrambled Eggs)', calories: 210, protein: 14, carbs: 4, fat: 15, portion: '2 Eggs' },
+
+  // BBQ & Grilled Delicacies
+  { name: 'Chicken Tikka (Breast)', calories: 280, protein: 42, carbs: 2, fat: 11, portion: '1 Piece (200g)' },
+  { name: 'Chicken Malai Boti', calories: 320, protein: 32, carbs: 3, fat: 20, portion: '5 Pieces (180g)' },
   { name: 'Beef Seekh Kabab', calories: 160, protein: 18, carbs: 2, fat: 9, portion: '1 Skewer (60g)' },
-  { name: 'Boiled White Rice', calories: 200, protein: 4, carbs: 44, fat: 0.5, portion: '1 Cup (150g)' },
-  { name: 'Chana Chaat (Chickpeas)', calories: 180, protein: 7, carbs: 32, fat: 3, portion: '1 Cup (150g)' },
+  { name: 'Chicken Seekh Kabab', calories: 140, protein: 19, carbs: 2, fat: 6, portion: '1 Skewer (60g)' },
+  { name: 'Chicken Reshmi Kabab', calories: 170, protein: 19, carbs: 3, fat: 9, portion: '1 Skewer (60g)' },
+  { name: 'Chapli Kabab (Peshawari Beef)', calories: 310, protein: 24, carbs: 6, fat: 22, portion: '1 Kabab (120g)' },
+  { name: 'Egg Shami Kabab', calories: 150, protein: 10, carbs: 6, fat: 9, portion: '1 Piece (60g)' },
+  { name: 'Fish Tikka (Grilled)', calories: 220, protein: 32, carbs: 1, fat: 10, portion: '1 Portion (180g)' },
+  { name: 'Peshawari Fried Fish', calories: 330, protein: 34, carbs: 12, fat: 16, portion: '1 Portion (200g)' },
+  { name: 'Chicken Sajji (Whole Roasted)', calories: 580, protein: 62, carbs: 2, fat: 36, portion: 'Half Chicken (350g)' },
+
+  // Fitness & High-Protein Snacks
+  { name: 'Roasted Chana (Spiced Chickpeas)', calories: 160, protein: 9, carbs: 26, fat: 3, portion: '1 Handful (40g)' },
+  { name: 'Roasted Almonds & Raisins (Badam Kismis)', calories: 190, protein: 6, carbs: 18, fat: 12, portion: '1 Handful (35g)' },
+  { name: 'High-Protein Chana Salad', calories: 210, protein: 11, carbs: 32, fat: 4, portion: '1 Bowl (200g)' },
+  { name: 'Oats Dahi Bowl with Dates', calories: 260, protein: 10, carbs: 44, fat: 5, portion: '1 Bowl (250g)' },
+
+  // Vegetable Curries & Extras
   { name: 'Mixed Vegetable Curry (Sabzi)', calories: 150, protein: 3, carbs: 18, fat: 8, portion: '1 Cup (150g)' },
-  { name: 'Sweet Lassi', calories: 220, protein: 6, carbs: 28, fat: 9, portion: '1 Glass (250ml)' },
+  { name: 'Palak Paneer / Saag', calories: 270, protein: 14, carbs: 10, fat: 20, portion: '1 Cup (200g)' },
+  { name: 'Aloo Gobi', calories: 160, protein: 4, carbs: 22, fat: 7, portion: '1 Cup (180g)' },
+  { name: 'Bhindi Masala (Okra Curry)', calories: 140, protein: 3, carbs: 14, fat: 8, portion: '1 Cup (150g)' },
+  { name: 'Chana Masala', calories: 230, protein: 10, carbs: 36, fat: 6, portion: '1 Cup (200g)' },
   { name: 'Plain Yogurt (Dahi)', calories: 100, protein: 6, carbs: 7, fat: 5, portion: '1 Cup (150g)' },
-  { name: 'Omelette (2 Eggs with Onions)', calories: 180, protein: 13, carbs: 2, fat: 14, portion: '1 Plate' },
-  { name: 'Paratha (Whole Wheat / Ghee)', calories: 290, protein: 5, carbs: 38, fat: 13, portion: '1 Piece' },
-  { name: 'Chai (Traditional Karak Tea)', calories: 90, protein: 2, carbs: 14, fat: 3, portion: '1 Cup' }
+  { name: 'Zeera Raita (Yogurt with Cumin)', calories: 80, protein: 4, carbs: 6, fat: 4, portion: '1 Cup (150g)' },
+
+  // Street Foods & Breakfasts
+  { name: 'Chana Chaat (Chickpeas)', calories: 180, protein: 7, carbs: 32, fat: 3, portion: '1 Cup (150g)' },
+  { name: 'Samosa (Potato Vegetable)', calories: 220, protein: 4, carbs: 28, fat: 11, portion: '1 Piece (90g)' },
+  { name: 'Samosa (Chicken/Beef)', calories: 240, protein: 11, carbs: 22, fat: 12, portion: '1 Piece (90g)' },
+  { name: 'Mix Vegetable Pakora', calories: 210, protein: 5, carbs: 24, fat: 11, portion: '1 Plate (120g)' },
+  { name: 'Dahi Bhalle', calories: 250, protein: 8, carbs: 38, fat: 8, portion: '1 Bowl (200g)' },
+  { name: 'Gol Gappay (Pani Puri)', calories: 160, protein: 3, carbs: 30, fat: 4, portion: '6 Pieces' },
+  { name: 'Chicken Bun Kabab', calories: 340, protein: 18, carbs: 42, fat: 12, portion: '1 Sandwich' },
+  { name: 'Chicken Paratha Roll', calories: 480, protein: 26, carbs: 46, fat: 22, portion: '1 Roll' },
+
+  // Drinks & Beverages
+  { name: 'Sweet Lassi', calories: 220, protein: 6, carbs: 28, fat: 9, portion: '1 Glass (250ml)' },
+  { name: 'Namkeen Lassi (Salty Dahi)', calories: 110, protein: 5, carbs: 8, fat: 6, portion: '1 Glass (250ml)' },
+  { name: 'Chai (Traditional Karak Tea)', calories: 90, protein: 2, carbs: 14, fat: 3, portion: '1 Cup' },
+  { name: 'Kashmiri Pink Tea', calories: 130, protein: 3, carbs: 16, fat: 6, portion: '1 Cup' },
+  { name: 'Sugarcane Juice (Ganay Ka Ras)', calories: 180, protein: 1, carbs: 45, fat: 0, portion: '1 Glass (300ml)' },
+
+  // Desserts & Sweets
+  { name: 'Kheer (Rice Pudding)', calories: 240, protein: 6, carbs: 38, fat: 8, portion: '1 Bowl (150g)' },
+  { name: 'Gulab Jamun', calories: 300, protein: 4, carbs: 48, fat: 11, portion: '2 Pieces (100g)' },
+  { name: 'Gajar Ka Halwa', calories: 320, protein: 6, carbs: 42, fat: 15, portion: '1 Bowl (150g)' },
+  { name: 'Jalebi', calories: 290, protein: 2, carbs: 56, fat: 7, portion: '100g' }
 ];
 
 export const PAKISTANI_DIET_PLANS = [
@@ -113,13 +180,18 @@ export const PAKISTANI_DIET_PLANS = [
 ];
 
 interface PakistaniFoodsSectionProps {
-  themeColor: string;
-  onLogFoodItem: (item: typeof PAKISTANI_FOOD_ITEMS[0]) => void;
-  onLogDietPlan: (plan: typeof PAKISTANI_DIET_PLANS[0]) => void;
-  onLogDietMeal: (meal: any) => void;
+  themeColor?: string;
+  onLogFoodItem?: (item: typeof PAKISTANI_FOOD_ITEMS[0]) => void;
+  onLogDietPlan?: (plan: typeof PAKISTANI_DIET_PLANS[0]) => void;
+  onLogDietMeal?: (meal: any) => void;
 }
 
-export function PakistaniFoodsSection({ themeColor, onLogFoodItem, onLogDietPlan, onLogDietMeal }: PakistaniFoodsSectionProps) {
+export function PakistaniFoodsSection({
+  themeColor = '#00F0FF',
+  onLogFoodItem,
+  onLogDietPlan,
+  onLogDietMeal
+}: PakistaniFoodsSectionProps) {
   const [subMode, setSubMode] = useState<'items' | 'plans' | 'creator'>('items');
   const [creatorMode, setCreatorMode] = useState<'food' | 'plan'>('food');
   const [selectedPlanId, setSelectedPlanId] = useState('pk_balanced');

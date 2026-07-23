@@ -528,10 +528,10 @@ export function LedgerView() {
                   </div>
                   <span className="block text-[8px] font-mono text-[#A3A3A3] uppercase mt-1.5 tracking-wider">
                     {advancedStats.runwayMonths >= 6 
-                      ? '✓ SECURE: Runway is sufficient to absorb heavy systemic disruptions.' 
+                      ? 'SECURE: Runway is sufficient to absorb heavy systemic disruptions.' 
                       : advancedStats.runwayMonths >= 3 
-                        ? '▲ MODERATE: Establish more emergency reserves immediately.' 
-                        : '⚠️ DANGER: System runway critical! Minimize outflow immediately!'}
+                        ? 'MODERATE WARNING: Establish more emergency reserves immediately.' 
+                        : 'DANGER: System runway critical! Minimize outflow immediately!'}
                   </span>
                 </div>
               </div>

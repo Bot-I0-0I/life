@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { OnboardingGuide } from './OnboardingGuide';
-import { Activity, Crosshair, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet, Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit, Rocket, Package, Plus, CheckCircle } from 'lucide-react';
+import { Activity, Crosshair, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet, Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit, Rocket, Package, Plus, CheckCircle, Dumbbell, Terminal, Heart } from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../AuthContext';
@@ -20,7 +20,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const isPenalty = false; // Penalty system removed
 
-  const navCategories = [
+  const navCategories: Array<{ title: string; items: Array<{ id: string; icon: any; label: string }> }> = [
     {
       title: "CORE CHANNELS",
       items: [
@@ -28,6 +28,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { id: 'hub', icon: LayoutGrid, label: 'System Hub' },
         { id: 'quests', icon: Shield, label: 'Daily Quests' },
         { id: 'scheduler', icon: CalendarDays, label: 'Directives' },
+      ]
+    },
+    {
+      title: "PHYSICAL & VITALITY",
+      items: [
+        { id: 'training', icon: Dumbbell, label: 'Training & Workouts' },
+        { id: 'nutrition', icon: Flame, label: 'Diets & Macros' },
+        { id: 'vessel', icon: Heart, label: 'Vessel Tracker' },
       ]
     },
     {
@@ -39,20 +47,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       ]
     },
     {
-      title: "VITALITY & TREASURY",
+      title: "TREASURY & CONFIG",
       items: [
-        { id: 'nutrition', icon: Flame, label: 'Metabolism' },
         { id: 'store', icon: ShoppingCart, label: 'System Store' },
         { id: 'ledger', icon: Wallet, label: 'Treasury' },
-      ]
-    },
-    {
-      title: "SYSTEM SETUP",
-      items: [
         { id: 'settings', icon: Settings, label: 'Settings' },
       ]
     }
-  ] as const;
+  ];
 
   const pendingReviews = useLiveQuery(() => db.weeklyReviews?.where('status').equals('pending').toArray()) || [];
   const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
@@ -67,11 +69,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const mobileNavItems = [
-    { id: 'status', icon: LayoutGrid, label: 'STATUS' },
-    { id: 'nutrition', icon: Flame, label: 'METABOLISM' },
-    { id: 'hub', icon: Package, label: 'HUB' },
-    { id: 'tactical', icon: Rocket, label: 'GOALS' },
-    { id: 'ledger', icon: Wallet, label: 'FINANCES' },
+    { id: 'status', icon: Activity, label: 'STATUS' },
+    { id: 'training', icon: Dumbbell, label: 'TRAINING' },
+    { id: 'hub', icon: LayoutGrid, label: 'HUB' },
+    { id: 'nutrition', icon: Flame, label: 'DIETS' },
+    { id: 'vessel', icon: Heart, label: 'VESSEL' },
   ] as const;
 
   const viewTitles: Record<string, { title: string, subtitle: string }> = {
@@ -81,13 +83,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     scheduler: { title: 'DIRECTIVES', subtitle: 'Schedule & Routines' },
     dungeons: { title: 'INSTANCES', subtitle: 'Combat & Challenges' },
     tactical: { title: 'GOALS', subtitle: 'Tactical Review' },
-    nutrition: { title: 'METABOLISM', subtitle: 'Fuel & Recovery' },
+    training: { title: 'TRAINING ENGINE', subtitle: 'Executable Workout Plans & Active Logs' },
+    nutrition: { title: 'DIETS & MACROS', subtitle: 'Metabolism & SQL Data House' },
+    vessel: { title: 'VESSEL TRACKER', subtitle: 'Physical Body & Sleep Biometrics' },
     store: { title: 'SYSTEM STORE', subtitle: 'Resource Exchange' },
     ledger: { title: 'TREASURY', subtitle: 'Financial Ledger' },
     reviews: { title: 'WEEKLY REVIEW', subtitle: 'Performance Analysis' },
     settings: { title: 'SYSTEM SETTINGS', subtitle: 'Configuration' },
   };
 
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const currentTitleInfo = viewTitles[currentView] || { title: 'SYSTEM', subtitle: 'Active Module' };
 
   return (
@@ -179,7 +184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 {category.items.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setView(item.id)}
+                    onClick={() => setView(item.id as any)}
                     className={cn(
                       "w-full flex items-center space-x-3 p-2 rounded-md transition-all duration-200 relative",
                       currentView === item.id 
@@ -234,22 +239,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
         uiTheme === 'monarch' && "bg-[#05050A]/95 border-indigo-500/30",
         isPenalty && "border-red-900/50 bg-[#1A0505]/95"
       )}>
-        {mobileNavItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setView(item.id as any)}
-            className={cn(
-              "flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 relative flex-1 min-w-0",
-              currentView === item.id
-                ? (isPenalty ? "text-red-400" : "")
-                : "text-[#555555] hover:text-[#A3A3A3]"
-            )}
-            style={currentView === item.id && !isPenalty ? { color: themeColor } : {}}
-          >
-            <item.icon className="w-5 h-5 mb-0.5" />
-            <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-center truncate w-full px-0.5">{item.label}</span>
-          </button>
-        ))}
+        {mobileNavItems.map((item) => {
+          const isHub = item.id === 'hub';
+          const isSelected = currentView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id as any)}
+              className={cn(
+                "flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 relative flex-1 min-w-0",
+                isHub && "relative -top-2 bg-[#121824] border border-cyan-500/50 shadow-md shadow-cyan-950/50 rounded-xl px-1.5 py-1",
+                isSelected
+                  ? (isPenalty ? "text-red-400" : "")
+                  : "text-[#666666] hover:text-[#A3A3A3]"
+              )}
+              style={isSelected && !isPenalty ? { color: themeColor } : {}}
+            >
+              <item.icon className={cn("w-5 h-5 mb-0.5", isHub && "text-cyan-400")} />
+              <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-center truncate w-full px-0.5 font-bold">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </nav>
 
       {/* Main Content */}
@@ -272,6 +284,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           
           <div className="flex space-x-2 items-center">
+            <button 
+              onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)} 
+              className="p-2 bg-[#141414] hover:bg-[#262626] rounded-sm flex items-center justify-center transition-colors border border-[#262626]"
+              title="Toggle Menu Navigation"
+            >
+              {isMobileDrawerOpen ? <X className="w-5 h-5 text-cyan-400" /> : <Menu className="w-5 h-5 text-cyan-400" />}
+            </button>
             {user && !isGuest ? (
               <button onClick={logout} className="p-2 bg-[#141414] hover:bg-red-900/20 hover:text-red-400 rounded-sm flex items-center justify-center transition-colors border border-[#262626]" title="Cloud Logout">
                 <LogOut className="w-4 h-4 text-[#A3A3A3]" />
@@ -303,6 +322,39 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+
+        {/* Mobile Full Navigation Overlay Drawer */}
+        <AnimatePresence>
+          {isMobileDrawerOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-[#0A0A0A] border-b border-[#262626] pb-6 mb-6 space-y-4 overflow-hidden"
+            >
+              <div className="grid grid-cols-2 gap-2 p-2">
+                {navCategories.flatMap(cat => cat.items).map((item: any) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setView(item.id as any);
+                      setIsMobileDrawerOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center space-x-2 p-2.5 rounded-sm border text-left transition-all",
+                      currentView === item.id
+                        ? "bg-[#1A1A1A] border-cyan-500/50 text-cyan-400 font-bold"
+                        : "bg-[#141414] border-[#262626] text-[#A3A3A3] hover:text-white"
+                    )}
+                  >
+                    <item.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-[11px] font-mono uppercase tracking-wider truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* View Content */}
         <motion.div

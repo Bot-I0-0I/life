@@ -176,6 +176,15 @@ export interface MissionLog {
   notes?: string;
 }
 
+export interface SystemLog {
+  id?: number;
+  timestamp: string;
+  category: 'QUEST' | 'WORKOUT' | 'NUTRITION' | 'VESSEL' | 'AUTH' | 'API' | 'ADMIN' | 'SYSTEM';
+  level: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS';
+  message: string;
+  details?: string;
+}
+
 export class SystemDatabase extends Dexie {
   userStats!: Table<UserStats, number>;
   quests!: Table<Quest, number>;
@@ -191,6 +200,7 @@ export class SystemDatabase extends Dexie {
   foodTemplates!: Table<FoodTemplate, number>;
   questTemplates!: Table<QuestTemplate, number>;
   missionLogs!: Table<MissionLog, number>;
+  systemLogs!: Table<SystemLog, number>;
 
   constructor() {
     super('SystemDB');
@@ -303,10 +313,46 @@ export class SystemDatabase extends Dexie {
       questTemplates: '++id, title',
       missionLogs: '++id, date, category'
     });
+    this.version(10).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type',
+      tacticalLogs: '++id, date, game',
+      foodTemplates: '++id, name',
+      questTemplates: '++id, title',
+      missionLogs: '++id, date, category',
+      systemLogs: '++id, timestamp, category, level'
+    });
   }
 }
 
 export const db = new SystemDatabase();
+
+export async function logSystemEvent(
+  category: 'QUEST' | 'WORKOUT' | 'NUTRITION' | 'VESSEL' | 'AUTH' | 'API' | 'ADMIN' | 'SYSTEM',
+  level: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS',
+  message: string,
+  details?: string
+) {
+  try {
+    await db.systemLogs.add({
+      timestamp: new Date().toISOString(),
+      category,
+      level,
+      message,
+      details
+    });
+  } catch (err) {
+    console.warn('Log insert failed:', err);
+  }
+}
 
 // Initialize default data
 db.on('populate', async () => {
@@ -379,6 +425,7 @@ export async function addXp(amount: number, attribute?: string) {
   }
 
   await db.userStats.update(1, updates);
+  await logSystemEvent('SYSTEM', 'SUCCESS', `Gained +${Math.floor(amount)} XP`, attribute ? `Attribute/Muscle: ${attribute}` : undefined);
   await updateStreak(); // Update streak when user gets XP!
 }
 

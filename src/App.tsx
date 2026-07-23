@@ -16,6 +16,8 @@ import { LedgerView } from './views/LedgerView';
 import { SettingsView } from './views/SettingsView';
 import { NutritionView } from './views/NutritionView';
 import { HubView } from './views/HubView';
+import { VesselTrackerView } from './views/VesselTrackerView';
+import { TrainingView } from './views/TrainingView';
 import { LevelUpModal } from './components/LevelUpModal';
 import { useStore } from './store/useStore';
 import { useSystemEngine } from './db/engine';
@@ -54,6 +56,8 @@ export default function App() {
       {currentView === 'ledger' && <LedgerView />}
       {currentView === 'reviews' && <ReviewView />}
       {currentView === 'nutrition' && <NutritionView />}
+      {currentView === 'training' && <TrainingView />}
+      {currentView === 'vessel' && <VesselTrackerView />}
       {currentView === 'settings' && <SettingsView />}
       {currentView === 'hub' && <HubView />}
       

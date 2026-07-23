@@ -4,7 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './AuthContext.tsx';
 
-// Catch and suppress HMR websocket-related errors that bubble up from Vite
+// Catch and suppress HMR websocket-related and fetch getter errors that bubble up
 window.addEventListener('unhandledrejection', (event) => {
   const reasonStr = event.reason?.message || String(event.reason);
   if (reasonStr && (
@@ -12,7 +12,9 @@ window.addEventListener('unhandledrejection', (event) => {
     reasonStr.includes('websocket') || 
     reasonStr.includes('Vite') ||
     reasonStr.includes('vite') ||
-    reasonStr.includes('connection')
+    reasonStr.includes('connection') ||
+    reasonStr.includes('Cannot set property fetch') ||
+    reasonStr.includes('fetch')
   )) {
     event.preventDefault();
     event.stopPropagation();
@@ -26,7 +28,9 @@ window.addEventListener('error', (event) => {
     msg.includes('websocket') || 
     msg.includes('Vite') ||
     msg.includes('vite') ||
-    msg.includes('connection')
+    msg.includes('connection') ||
+    msg.includes('Cannot set property fetch') ||
+    msg.includes('fetch')
   )) {
     event.preventDefault();
     event.stopPropagation();

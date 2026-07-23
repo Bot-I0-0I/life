@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 interface AppState {
   isCloaked: boolean;
   theme: 'dark' | 'light';
-  currentView: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub';
+  currentView: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub' | 'vessel' | 'training';
   levelUpModal: number | null;
   showActiveQuestTicker: boolean;
   showAttributeProgressBars: boolean;
@@ -12,7 +12,7 @@ interface AppState {
   showMuscleFigurine: boolean;
   toggleCloak: () => void;
   toggleTheme: () => void;
-  setView: (view: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub') => void;
+  setView: (view: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub' | 'vessel' | 'training') => void;
   setLevelUpModal: (level: number | null) => void;
   toggleHUDComponent: (key: 'showActiveQuestTicker' | 'showAttributeProgressBars' | 'showRadarChart' | 'showMuscleFigurine') => void;
 }

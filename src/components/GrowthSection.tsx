@@ -6,16 +6,16 @@ import { db, addXp } from '../db/db';
 import { toast } from 'sonner';
 
 interface GrowthSectionProps {
-  vesselLogs: any[];
-  nutritionLogs: any[];
+  vesselLogs?: any[];
+  nutritionLogs?: any[];
   todayLog?: any;
-  themeColor: string;
-  targetCalories: number;
-  consumedWater: number;
-  consumedProtein: number;
-  targetProtein: number;
-  consumedCalories: number;
-  burnedCalories: number;
+  themeColor?: string;
+  targetCalories?: number;
+  consumedWater?: number;
+  consumedProtein?: number;
+  targetProtein?: number;
+  consumedCalories?: number;
+  burnedCalories?: number;
 }
 
 const PAKISTANI_GROWTH_WISDOM = [
@@ -42,16 +42,16 @@ const PAKISTANI_GROWTH_WISDOM = [
 ];
 
 export function GrowthSection({
-  vesselLogs,
-  nutritionLogs,
+  vesselLogs = [],
+  nutritionLogs = [],
   todayLog,
-  themeColor,
-  targetCalories,
-  consumedWater,
-  consumedProtein,
-  targetProtein,
-  consumedCalories,
-  burnedCalories
+  themeColor = '#00F0FF',
+  targetCalories = 2200,
+  consumedWater = 2000,
+  consumedProtein = 120,
+  targetProtein = 140,
+  consumedCalories = 1800,
+  burnedCalories = 350
 }: GrowthSectionProps) {
   const [wisdomIndex, setWisdomIndex] = useState(0);
 
