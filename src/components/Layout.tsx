@@ -3,7 +3,8 @@ import { useStore } from '../store/useStore';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { OnboardingGuide } from './OnboardingGuide';
-import { Activity, Crosshair, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet, Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit, Rocket, Package, Plus, CheckCircle, Dumbbell, Terminal, Heart } from 'lucide-react';
+import { ThemeGalleryModal } from './ThemeGalleryModal';
+import { Activity, Crosshair, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet, Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit, Rocket, Package, Plus, CheckCircle, Dumbbell, Terminal, Heart, Palette, Clock } from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../AuthContext';
@@ -13,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const userStats = useLiveQuery(() => db.userStats.get(1));
   const { user, isGuest, login, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const activeQuestsList = useLiveQuery(async () => {
     const list = await db.quests.toArray();
     return list.filter(q => !q.completed);
@@ -28,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { id: 'hub', icon: LayoutGrid, label: 'System Hub' },
         { id: 'quests', icon: Shield, label: 'Daily Quests' },
         { id: 'scheduler', icon: CalendarDays, label: 'Directives' },
+        { id: 'timetable', icon: Clock, label: 'Daily Timetable' },
       ]
     },
     {
@@ -66,6 +69,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     default: 'border-transparent',
     s_class: 'border-purple-500/50 shadow-[inset_0_0_50px_rgba(168,85,247,0.15)] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a0b2e] via-[#0A0A0A] to-[#0A0A0A]',
     monarch: 'border-indigo-500/60 shadow-[inset_0_0_80px_rgba(99,102,241,0.2)] bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] bg-[#05050A]',
+    shadow_red: 'border-red-600/50 shadow-[inset_0_0_60px_rgba(239,68,68,0.15)] bg-[#080303]',
+    golden_national: 'border-amber-500/50 shadow-[inset_0_0_60px_rgba(245,158,11,0.15)] bg-[#0C0A09]',
+    emerald_vessel: 'border-emerald-500/50 shadow-[inset_0_0_60px_rgba(16,185,129,0.15)] bg-[linear-gradient(to_right,#10b98108_1px,transparent_1px),linear-gradient(to_bottom,#10b98108_1px,transparent_1px)] bg-[size:20px_20px] bg-[#02120B]',
+    solar_daylight: 'border-blue-500/30 bg-[#F8FAFC]',
   };
 
   const mobileNavItems = [
@@ -206,6 +213,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex flex-col mt-auto space-y-2">
+          <button
+            onClick={() => setIsThemeModalOpen(true)}
+            className="flex items-center space-x-3 p-3 rounded-lg text-cyan-400 bg-cyan-950/30 border border-cyan-500/30 hover:bg-cyan-900/40 hover:border-cyan-400 transition-all font-mono text-xs uppercase font-bold"
+            title="Open UI Theme Gallery & Samples"
+          >
+            <Palette className="w-5 h-5 text-cyan-400" />
+            <span>UI Theme Gallery</span>
+          </button>
           {user && !isGuest ? (
             <button
               onClick={logout}
@@ -283,7 +298,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           
-          <div className="flex space-x-2 items-center">
+          <div className="flex space-x-1.5 items-center">
+            <button 
+              onClick={() => setIsThemeModalOpen(true)}
+              className="p-2 bg-[#141414] hover:bg-cyan-950/50 rounded-sm flex items-center justify-center transition-colors border border-cyan-500/30 text-cyan-400"
+              title="UI Theme Gallery & Samples"
+            >
+              <Palette className="w-4 h-4 text-cyan-400" />
+            </button>
             <button 
               onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)} 
               className="p-2 bg-[#141414] hover:bg-[#262626] rounded-sm flex items-center justify-center transition-colors border border-[#262626]"
@@ -370,6 +392,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Onboarding Guide Portal */}
         <OnboardingGuide themeColor={themeColor} />
       </main>
+
+      {/* UI Theme Samples Gallery Modal */}
+      <ThemeGalleryModal 
+        isOpen={isThemeModalOpen} 
+        onClose={() => setIsThemeModalOpen(false)} 
+        currentThemeColor={themeColor}
+        currentUiTheme={uiTheme}
+      />
     </div>
   );
 }

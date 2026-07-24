@@ -960,5 +960,468 @@ export const BUILT_IN_WORKOUT_PROGRAMS: WorkoutPlanItem[] = [
         ]
       }
     ]
+  },
+
+  // --- PROGRAM 4: SHADOW MONARCH SOLO PROTOCOL ---
+  {
+    id: 'shadow_monarch_solo_protocol',
+    name: 'SHADOW MONARCH 100-REPS SOLO PROTOCOL',
+    area: 'System Ranking Protocol',
+    tag: 'Solo Leveling',
+    equipment: 'No Equipment',
+    targetGoal: 'strength',
+    recommendedBodyType: 'All Ranks / High Willpower',
+    compatibilityNote: 'Inspired by Jin-Woo daily QUEST. 100 pushups, 100 situps, 100 squats, 10km daily protocol.',
+    description: 'The legendary daily punishment-proof workout. Execute 100 reps of core movements to level up attributes instantly.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: THE MONARCH DAILY 100',
+        muscleFocus: 'Full Body Overload & Stamina',
+        exercises: [
+          { name: 'SHADOW PUSHUPS', calories: 180, duration: 15, muscleGroup: 'chest', tag: 'System', equipment: 'None', details: '5 sets × 20 strict floor pushups', defaultSets: 5, targetReps: 20 },
+          { name: 'SYSTEM ABDOMINAL SITUPS', calories: 140, duration: 12, muscleGroup: 'core', tag: 'System', equipment: 'None', details: '5 sets × 20 full range situps', defaultSets: 5, targetReps: 20 },
+          { name: 'MONARCH DEEP SQUATS', calories: 200, duration: 15, muscleGroup: 'legs', tag: 'System', equipment: 'None', details: '5 sets × 20 full-depth air squats', defaultSets: 5, targetReps: 20 },
+          { name: 'SHADOW RUN / CARDIO MARCH', calories: 350, duration: 30, muscleGroup: 'cardio', tag: 'Endurance', equipment: 'None', details: '30 mins steady pace run or outdoor march', defaultSets: 1, targetReps: 30 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 5: POWERLIFTING BIG 3 STRENGTH PEAK ---
+  {
+    id: 'powerlifting_big3_5x5',
+    name: 'POWERLIFTING BIG 3 STRENGTH PEAK',
+    area: 'Heavy Powerlifting',
+    tag: 'Strength',
+    equipment: 'Barbell & Squat Rack',
+    targetGoal: 'strength',
+    recommendedBodyType: 'Intermediate to Heavy Lifter',
+    compatibilityNote: 'Designed for maximizing 1-Rep-Max force output across Squat, Bench, and Deadlift.',
+    description: 'Pure 5x5 compound powerlifting strength program focusing on neurological adaptation and peak force production.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: SQUAT & BENCH OVERLOAD',
+        muscleFocus: 'Quads, Chest & Triceps',
+        exercises: [
+          { name: 'BARBELL LOW-BAR BACK SQUAT', calories: 300, duration: 20, muscleGroup: 'legs', tag: 'Powerlifting', equipment: 'Barbell', details: '5 sets × 5 heavy reps (85% 1RM)', defaultSets: 5, targetReps: 5 },
+          { name: 'PAUSED BARBELL BENCH PRESS', calories: 240, duration: 18, muscleGroup: 'chest', tag: 'Powerlifting', equipment: 'Barbell', details: '5 sets × 5 reps (1 second pause on chest)', defaultSets: 5, targetReps: 5 },
+          { name: 'CLOSE-GRIP BENCH PRESS', calories: 160, duration: 12, muscleGroup: 'arms', tag: 'Strength', equipment: 'Barbell', details: '4 sets × 8 reps', defaultSets: 4, targetReps: 8 }
+        ]
+      },
+      {
+        dayNumber: 2,
+        title: 'DAY 2: CONVENTIONAL DEADLIFT & LAT ROW',
+        muscleFocus: 'Posterior Chain & Lats',
+        exercises: [
+          { name: 'HEAVY CONVENTIONAL DEADLIFT', calories: 320, duration: 22, muscleGroup: 'back', tag: 'Powerlifting', equipment: 'Barbell', details: '5 sets × 5 reps (Reset every rep)', defaultSets: 5, targetReps: 5 },
+          { name: 'PENDLAY BARBELL ROWS', calories: 200, duration: 15, muscleGroup: 'back', tag: 'Strength', equipment: 'Barbell', details: '4 sets × 8 reps explosive off floor', defaultSets: 4, targetReps: 8 },
+          { name: 'FARMERS BARBELL CARRY', calories: 150, duration: 10, muscleGroup: 'core', tag: 'Grip', equipment: 'Barbell', details: '4 sets × 45s heavy carry', defaultSets: 4, targetReps: 45 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 6: PUSH PULL LEGS (PPL) PRO HYPERTROPHY ---
+  {
+    id: 'ppl_pro_hypertrophy_6day',
+    name: 'PUSH PULL LEGS (PPL) PRO HYPERTROPHY 6-DAY',
+    area: 'Aesthetic Bodybuilding',
+    tag: 'Hypertrophy',
+    equipment: 'Gym / Barbells & Dumbbells',
+    targetGoal: 'muscle_gain',
+    recommendedBodyType: 'All Body Types / Mass Building',
+    compatibilityNote: 'Gold standard 6-day split maximizing muscular hypertrophy with high volume.',
+    description: 'The classic 6-day Push-Pull-Legs split engineered for maximal sarcoplasmic hypertrophy and symmetrical physique.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: PUSH A (CHEST, SHOULDERS, TRICEPS)',
+        muscleFocus: 'Chest, Front Delt & Triceps',
+        exercises: [
+          { name: 'INCLINE BARBELL PRESS', calories: 220, duration: 15, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 8 reps', defaultSets: 4, targetReps: 8 },
+          { name: 'FLAT DUMBBELL CHEST PRESS', calories: 180, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
+          { name: 'SEATED DUMBBELL OVERHEAD PRESS', calories: 150, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 },
+          { name: 'SIDE LATERAL RAISES', calories: 100, duration: 8, muscleGroup: 'shoulders', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 }
+        ]
+      },
+      {
+        dayNumber: 2,
+        title: 'DAY 2: PULL A (BACK, REAR DELT, BICEPS)',
+        muscleFocus: 'Lats, Upper Back & Biceps',
+        exercises: [
+          { name: 'WIDE-GRIP LAT PULLDOWNS', calories: 170, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
+          { name: 'ONE-ARM DUMBBELL ROW', calories: 160, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps per side', defaultSets: 4, targetReps: 10 },
+          { name: 'FACEPULLS WITH CABLE ROPE', calories: 110, duration: 8, muscleGroup: 'shoulders', tag: 'Isolation', equipment: 'Cable', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
+          { name: 'INCLINE DUMBBELL BICEP CURLS', calories: 120, duration: 8, muscleGroup: 'arms', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 }
+        ]
+      },
+      {
+        dayNumber: 3,
+        title: 'DAY 3: LEGS A (QUADS, HAMSTRINGS, CALVES)',
+        muscleFocus: 'Quads & Hamstrings',
+        exercises: [
+          { name: 'BARBELL BACK SQUAT', calories: 280, duration: 18, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 8 reps', defaultSets: 4, targetReps: 8 },
+          { name: 'ROMANIAN DEADLIFT (RDL)', calories: 210, duration: 12, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
+          { name: 'LEG EXTENSION MACHINE', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Isolation', equipment: 'Machine', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 },
+          { name: 'STANDING CALF RAISES', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Isolation', equipment: 'Machine', details: '4 sets × 20 reps', defaultSets: 4, targetReps: 20 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 7: MMA COMBAT STRIKER CONDITIONING ---
+  {
+    id: 'mma_combat_striker',
+    name: 'MMA COMBAT STRIKER CONDITIONING',
+    area: 'Martial Arts Athleticism',
+    tag: 'Athletic',
+    equipment: 'No Equipment or Dumbbell',
+    targetGoal: 'fat_loss',
+    recommendedBodyType: 'Athletic / Fighter Build',
+    compatibilityNote: 'High-speed combat rounds designed to elevate VO2 max and explosive punch torque.',
+    description: '3-minute fight rounds simulating MMA octagon demands. Combines shadow boxing, sprawl burpees, and rotational core drive.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'ROUND 1: COMBAT STRIKE & SPRAWL',
+        muscleFocus: 'Cardio, Shoulders & Explosive Legs',
+        exercises: [
+          { name: 'SHADOW BOXING COMBOS (1-2-3-HOOK)', calories: 160, duration: 10, muscleGroup: 'cardio', tag: 'Combat', equipment: 'None', details: '3 rounds × 3 mins rapid punching', defaultSets: 3, targetReps: 180 },
+          { name: 'MMA SPRAWL BURPEES', calories: 200, duration: 10, muscleGroup: 'cardio', tag: 'Combat', equipment: 'None', details: '4 sets × 12 fast sprawls', defaultSets: 4, targetReps: 12 },
+          { name: 'ROTATIONAL MEDICINE BALL / CORE TWISTS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Combat', equipment: 'None', details: '4 sets × 20 twisting reps', defaultSets: 4, targetReps: 20 },
+          { name: 'EXPLOSIVE EXPLOSIVE TUCK JUMPS', calories: 150, duration: 8, muscleGroup: 'legs', tag: 'Plyo', equipment: 'None', details: '3 sets × 12 high jumps', defaultSets: 3, targetReps: 12 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 8: TACTICAL KETTLEBELL HYBRID ENGINE ---
+  {
+    id: 'tactical_kettlebell_hybrid',
+    name: 'TACTICAL KETTLEBELL HYBRID ENGINE',
+    area: 'Functional Conditioning',
+    tag: 'Tactical',
+    equipment: 'Kettlebell / Dumbbell',
+    targetGoal: 'calisthenics',
+    recommendedBodyType: 'All Body Types',
+    compatibilityNote: 'Develops unbreakable grip, posterior power, and metabolic resilience.',
+    description: 'Special forces style kettlebell conditioning. Heavy swings, goblet squats, and Turkish get-ups.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: KETTLEBELL POSTERIOR OVERDRIVE',
+        muscleFocus: 'Posterior Chain, Core & Grip',
+        exercises: [
+          { name: 'RUSSIAN KETTLEBELL SWINGS', calories: 220, duration: 12, muscleGroup: 'back', tag: 'Tactical', equipment: 'Kettlebell', details: '5 sets × 20 reps (Explosive hip drive)', defaultSets: 5, targetReps: 20 },
+          { name: 'HEAVY GOBLET SQUATS', calories: 180, duration: 10, muscleGroup: 'legs', tag: 'Tactical', equipment: 'Kettlebell', details: '4 sets × 12 reps deep depth', defaultSets: 4, targetReps: 12 },
+          { name: 'TURKISH GET-UPS', calories: 140, duration: 10, muscleGroup: 'core', tag: 'Tactical', equipment: 'Kettlebell', details: '3 sets × 5 reps per arm slow control', defaultSets: 3, targetReps: 5 },
+          { name: 'SINGLE-ARM KETTLEBELL CLEAN & PRESS', calories: 160, duration: 10, muscleGroup: 'shoulders', tag: 'Tactical', equipment: 'Kettlebell', details: '4 sets × 8 reps per arm', defaultSets: 4, targetReps: 8 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 9: SPINE DECOMPRESSION & JOINT MOBILITY REHAB ---
+  {
+    id: 'spine_decompression_joint_rehab',
+    name: 'SPINE DECOMPRESSION & JOINT MOBILITY REHAB',
+    area: 'Rehab & Joint Health',
+    tag: 'Rehab',
+    equipment: 'No Equipment / Mat',
+    targetGoal: 'joint_care',
+    recommendedBodyType: 'Heavy Body / Desk Workers / Joint Care',
+    compatibilityNote: 'Low impact, zero axial loading. Restores spinal disc height and relieves back/knee friction.',
+    description: 'Therapeutic joint mobility protocol designed to decompress lower lumbar vertebrae and open tight hips.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: LUMBAR DECOMPRESSION & HIP OPENER',
+        muscleFocus: 'Spine, Lower Back & Hips',
+        exercises: [
+          { name: 'CAT-COW SPINAL SEGMENTATION', calories: 60, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 slow breath-coordinated reps', defaultSets: 3, targetReps: 12 },
+          { name: 'BIRD-DOG CORE STABILIZATION', calories: 70, duration: 8, muscleGroup: 'core', tag: 'Rehab', equipment: 'None', details: '3 sets × 10 reps per side (2s pause)', defaultSets: 3, targetReps: 10 },
+          { name: '90/90 HIP MOBILITY FLOW', calories: 80, duration: 10, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 8 gentle transitions', defaultSets: 3, targetReps: 8 },
+          { name: 'DEAD HANG SPINE DECOMPRESSION', calories: 50, duration: 6, muscleGroup: 'back', tag: 'Rehab', equipment: 'Pull-up Bar', details: '4 sets × 45s passive bar hang', defaultSets: 4, targetReps: 45 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 10: HIIT TABATA 20-MIN FAT FURNACE ---
+  {
+    id: 'hiit_tabata_fat_furnace',
+    name: 'HIIT TABATA 20-MIN FAT FURNACE',
+    area: 'High Intensity Fat Shred',
+    tag: 'Cardio',
+    equipment: 'No Equipment',
+    targetGoal: 'fat_loss',
+    recommendedBodyType: 'Metabolic Shred / Weight Loss',
+    compatibilityNote: '20 seconds max effort / 10 seconds rest protocol proven to trigger post-exercise oxygen consumption (EPOC).',
+    description: 'Ultra intense 20-minute Tabata intervals burning maximum calories in minimal time.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: TABATA BURPEE & SPRINT MATRIX',
+        muscleFocus: 'Full Body Cardiovascular System',
+        exercises: [
+          { name: 'TABATA BURPEES (20S ON / 10S OFF)', calories: 150, duration: 8, muscleGroup: 'cardio', tag: 'HIIT', equipment: 'None', details: '8 intervals × 20s max effort', defaultSets: 8, targetReps: 20 },
+          { name: 'TABATA SPEED MOUNTAIN CLIMBERS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'HIIT', equipment: 'None', details: '8 intervals × 20s fast feet', defaultSets: 8, targetReps: 20 },
+          { name: 'TABATA JUMP SQUATS', calories: 140, duration: 8, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '8 intervals × 20s plyo jumps', defaultSets: 8, targetReps: 20 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 11: SHADOW NINJA AGILITY & PLYOMETRICS ---
+  {
+    id: 'ninja_agility_plyometrics',
+    name: 'SHADOW NINJA AGILITY & PLYOMETRIC EXPLOSION',
+    area: 'Speed & Agility',
+    tag: 'Athletic',
+    equipment: 'No Equipment',
+    targetGoal: 'calisthenics',
+    recommendedBodyType: 'Athletic / Lean Build',
+    compatibilityNote: 'Enhances nervous system fast-twitch fibers, lateral agility, and vertical jump power.',
+    description: 'Dynamic agility and vertical power routine combining lateral bounds, skater hops, and depth jumps.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: LATERAL SPEED & VERTICAL POWER',
+        muscleFocus: 'Fast-Twitch Leg Fibers & Agility',
+        exercises: [
+          { name: 'SKATER BOUND HOPS', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Agility', equipment: 'None', details: '4 sets × 16 explosive side hops', defaultSets: 4, targetReps: 16 },
+          { name: 'BROAD JUMP TO BACKPEDAL', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'Plyo', equipment: 'None', details: '4 sets × 8 max distance leaps', defaultSets: 4, targetReps: 8 },
+          { name: 'SINGLE-LEG HOP STABILITY', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Balance', equipment: 'None', details: '3 sets × 10 hops per leg', defaultSets: 3, targetReps: 10 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 12: POSTERIOR CHAIN & GLUTE POWER SHRED ---
+  {
+    id: 'posterior_chain_glute_power',
+    name: 'POSTERIOR CHAIN & GLUTE POWER SHRED',
+    area: 'Lower Body Aesthetics',
+    tag: 'Hypertrophy',
+    equipment: 'Barbell or Dumbbells',
+    targetGoal: 'muscle_gain',
+    recommendedBodyType: 'All Body Types',
+    compatibilityNote: 'Strengthens hamstrings, glutes, and lower back to correct anterior pelvic tilt.',
+    description: 'High-density glute and hamstring focused training plan utilizing hip thrusts and Romanian deadlifts.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: HEAVY HIP THRUSTS & RDLs',
+        muscleFocus: 'Gluteus Maximus & Hamstrings',
+        exercises: [
+          { name: 'BARBELL / DUMBBELL HIP THRUSTS', calories: 210, duration: 15, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 12 reps (2 second squeeze at peak)', defaultSets: 4, targetReps: 12 },
+          { name: 'SINGLE-LEG DUMBBELL RDL', calories: 160, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps per side', defaultSets: 3, targetReps: 10 },
+          { name: 'FROG PUMPS FOR GLUTE BURN', calories: 120, duration: 8, muscleGroup: 'legs', tag: 'Burnout', equipment: 'None', details: '3 sets × 30 rapid reps', defaultSets: 3, targetReps: 30 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 13: GYMNASTIC RINGS UPPER BODY DOMINANCE ---
+  {
+    id: 'gymnastic_rings_dominance',
+    name: 'GYMNASTIC RINGS UPPER BODY DOMINANCE',
+    area: 'Advanced Calisthenics',
+    tag: 'Rings',
+    equipment: 'Gymnastic Rings',
+    targetGoal: 'calisthenics',
+    recommendedBodyType: 'Athletic / Relative Strength',
+    compatibilityNote: 'Instability of suspension rings recruits stabilizing micro-muscles across shoulders & chest.',
+    description: 'Master upper body suspension training with ring dips, ring pushups, and skin-the-cat progressions.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: RING PUSH & DIP STABILITY',
+        muscleFocus: 'Chest, Stabilizers & Triceps',
+        exercises: [
+          { name: 'SUSPENSION RING DIPS', calories: 170, duration: 12, muscleGroup: 'chest', tag: 'Rings', equipment: 'Rings', details: '4 sets × 8 reps (Turn rings out at top)', defaultSets: 4, targetReps: 8 },
+          { name: 'RING FLYES / BULGARIAN PUSHUPS', calories: 150, duration: 10, muscleGroup: 'chest', tag: 'Rings', equipment: 'Rings', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 },
+          { name: 'RING INVERTED ROWS', calories: 140, duration: 10, muscleGroup: 'back', tag: 'Rings', equipment: 'Rings', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 14: 6-PACK ABS & OBLIQUE CORE SHREDDER ---
+  {
+    id: 'core_sixpack_crusher',
+    name: '6-PACK ABS & OBLIQUE CORE SHREDDER',
+    area: 'Abdominal Sculpting',
+    tag: 'Core',
+    equipment: 'No Equipment',
+    targetGoal: 'fat_loss',
+    recommendedBodyType: 'All Body Types',
+    compatibilityNote: 'Targets rectus abdominis, transverse abdominis, and obliques for a chiseled midsection.',
+    description: '15-minute intense non-stop core circuit targeting upper abs, lower abs, and obliques.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: ABDOMINAL COMPRESSION MATRIX',
+        muscleFocus: 'Rectus Abdominis & Obliques',
+        exercises: [
+          { name: 'HANGING LEG LIFTS / REVERSE CRUNCHES', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
+          { name: 'RUSSIAN TWISTS WITH WEIGHT', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 20 twists', defaultSets: 4, targetReps: 20 },
+          { name: 'BICYCLE CRUNCHES (CONTROLLED)', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 20 reps', defaultSets: 3, targetReps: 20 },
+          { name: 'HOLLOW BODY isometric HOLD', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 45 seconds', defaultSets: 3, targetReps: 45 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 15: IRON BODY ISOMETRIC TENSION PROTOCOL ---
+  {
+    id: 'isometric_iron_body',
+    name: 'IRON BODY ISOMETRIC TENSION PROTOCOL',
+    area: 'Tendon Strength & Isometrics',
+    tag: 'Tendon Strength',
+    equipment: 'No Equipment',
+    targetGoal: 'joint_care',
+    recommendedBodyType: 'All Fitness Levels / Joint Recovery',
+    compatibilityNote: 'Isometric muscle contraction increases tendon stiffness without destructive eccentric damage.',
+    description: 'Static hold holds designed to build iron tendon density, mental grit, and joint durability.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: FULL BODY ISOMETRIC HOLD',
+        muscleFocus: 'Tendon Stiffness & Core',
+        exercises: [
+          { name: 'PARALLEL SQUAT WALL SIT HOLD', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Isometric', equipment: 'None', details: '4 sets × 60s hold', defaultSets: 4, targetReps: 60 },
+          { name: 'PUSHUP BOTTOM POSITION ISOMETRIC HOLD', calories: 100, duration: 8, muscleGroup: 'chest', tag: 'Isometric', equipment: 'None', details: '3 sets × 30s hold 2 inches off floor', defaultSets: 3, targetReps: 30 },
+          { name: 'SUPERMAN LAT TENSION HOLD', calories: 80, duration: 6, muscleGroup: 'back', tag: 'Isometric', equipment: 'None', details: '3 sets × 45s prone hold', defaultSets: 3, targetReps: 45 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 16: DUMBBELL ONLY UPPER/LOWER 4-DAY SPLIT ---
+  {
+    id: 'dumbbell_upper_lower_split',
+    name: 'DUMBBELL ONLY UPPER/LOWER 4-DAY SPLIT',
+    area: 'Home Gym Hypertrophy',
+    tag: 'Dumbbell',
+    equipment: 'Dumbbells',
+    targetGoal: 'muscle_gain',
+    recommendedBodyType: 'All Body Types / Home Gym Users',
+    compatibilityNote: 'Hypertrophy system engineered requiring only a pair of adjustable dumbbells.',
+    description: 'Complete 4-day upper/lower muscle mass builder requiring only a set of dumbbells.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: UPPER BODY DUMBBELL POWER',
+        muscleFocus: 'Chest, Back, Shoulders & Arms',
+        exercises: [
+          { name: 'DUMBBELL FLOOR / BENCH PRESS', calories: 200, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
+          { name: 'SEATED DUMBBELL ROWS', calories: 180, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
+          { name: 'DUMBBELL SHOULDER PRESS', calories: 150, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 17: HYBRID ATHLETE: RUNNING & BARBELL METCON ---
+  {
+    id: 'hybrid_runner_barbell_metcon',
+    name: 'HYBRID ATHLETE: RUNNING & BARBELL METCON',
+    area: 'Hybrid Fitness',
+    tag: 'Hybrid',
+    equipment: 'Barbell & Running Shoes',
+    targetGoal: 'fat_loss',
+    recommendedBodyType: 'Endurance & Strength Hybrid',
+    compatibilityNote: 'Combines 5K pace endurance with barbell thrusters for maximum cardiovascular output.',
+    description: 'Engineered for hybrid athletes who want to run fast 5Ks while maintaining heavy strength.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: BARBELL METCON & 3KM TEMPO',
+        muscleFocus: 'Cardio, Quads & Upper Press',
+        exercises: [
+          { name: 'BARBELL THRUSTERS LIGHT/MED', calories: 240, duration: 12, muscleGroup: 'legs', tag: 'Metcon', equipment: 'Barbell', details: '4 sets × 15 reps continuous', defaultSets: 4, targetReps: 15 },
+          { name: '3KM OUTDOOR TEMPO RUN', calories: 300, duration: 18, muscleGroup: 'cardio', tag: 'Running', equipment: 'Shoes', details: 'Target pace under 5:30/km', defaultSets: 1, targetReps: 18 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 18: GRAPPLER ANATOMY: FOREARMS & GRIP STRENGTH ---
+  {
+    id: 'grappler_grip_armageddon',
+    name: 'GRAPPLER ANATOMY: FOREARMS & GRIP STRENGTH',
+    area: 'Combat Grip Strength',
+    tag: 'Grip',
+    equipment: 'Dumbbells / Towel',
+    targetGoal: 'strength',
+    recommendedBodyType: 'Martial Artists / Grapplers',
+    compatibilityNote: 'Unbreakable grip strength, crushing wrist curls, and thick forearm hypertrophy.',
+    description: 'Dedicated grip & forearm conditioning system for Jiu-Jitsu, wrestling, and heavy deadlifters.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: FOREARM FLEXORS & CRUSHING GRIP',
+        muscleFocus: 'Wrist Flexors, Brachioradialis & Grip',
+        exercises: [
+          { name: 'TOWEL PULL-UP HANGS', calories: 120, duration: 8, muscleGroup: 'back', tag: 'Grip', equipment: 'Towel', details: '4 sets × 45s towel hold', defaultSets: 4, targetReps: 45 },
+          { name: 'DUMBBELL WRIST CURLS OVER BENCH', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
+          { name: 'REVERSE BARBELL BICEP CURLS', calories: 110, duration: 8, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 12 reps (Brachioradialis focus)', defaultSets: 4, targetReps: 12 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 19: DESKBOUND POSTURE & SCIATICA RELIEF ---
+  {
+    id: 'deskbound_posture_sciatica',
+    name: 'DESKBOUND POSTURE & SCIATICA RELIEF',
+    area: 'Ergonomic Health',
+    tag: 'Posture',
+    equipment: 'No Equipment',
+    targetGoal: 'joint_care',
+    recommendedBodyType: 'Desk Workers / Sciatica Prevention',
+    compatibilityNote: 'Fixes rounded shoulders (upper cross syndrome) and tight hip flexors from sitting.',
+    description: '10-minute daily posture corrector releasing nerve compression and restoring erect spine alignment.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: THORACIC EXTENSION & PIRIFORMIS STRETCH',
+        muscleFocus: 'Upper Back, Gluteus & Neck',
+        exercises: [
+          { name: 'WALL SLIDES FOR UPPER BACK', calories: 50, duration: 6, muscleGroup: 'back', tag: 'Posture', equipment: 'None', details: '3 sets × 12 strict reps against wall', defaultSets: 3, targetReps: 12 },
+          { name: 'PIRIFORMIS SEATED FIGURE-4 STRETCH', calories: 40, duration: 6, muscleGroup: 'legs', tag: 'Sciatica', equipment: 'None', details: '3 sets × 45s hold per side', defaultSets: 3, targetReps: 45 },
+          { name: 'CHIN TUCKS FOR NECK ALIGNMENT', calories: 30, duration: 4, muscleGroup: 'shoulders', tag: 'Posture', equipment: 'None', details: '3 sets × 15 gentle holds', defaultSets: 3, targetReps: 15 }
+        ]
+      }
+    ]
+  },
+
+  // --- PROGRAM 20: 3D PECTORAL PUMP & TRICEP DESTROYER ---
+  {
+    id: 'pectoral_pump_tricep_destroyer',
+    name: '3D PECTORAL PUMP & TRICEP DESTROYER',
+    area: 'Chest & Arm Hypertrophy',
+    tag: 'Chest & Arms',
+    equipment: 'Dumbbells & Cables or Bench',
+    targetGoal: 'muscle_gain',
+    recommendedBodyType: 'All Body Types',
+    compatibilityNote: 'Specialized upper chest incline focus paired with tricep long head isolation.',
+    description: 'Focused chest and arm session designed for maximum blood flow and upper chest shelf volume.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: INCLINE CHEST & TRICEP LONG HEAD',
+        muscleFocus: 'Upper Pectorals & Triceps',
+        exercises: [
+          { name: 'INCLINE DUMBBELL CHEST PRESS', calories: 200, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
+          { name: 'LOW TO HIGH CABLE FLYES', calories: 140, duration: 10, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 12 reps (Upper chest squeeze)', defaultSets: 4, targetReps: 12 },
+          { name: 'OVERHEAD DUMBBELL TRICEP EXTENSION', calories: 130, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
+          { name: 'DIPS ON PARALLEL BARS', calories: 160, duration: 10, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Bars', details: '3 sets × 12 reps lean forward', defaultSets: 3, targetReps: 12 }
+        ]
+      }
+    ]
   }
 ];

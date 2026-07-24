@@ -18,6 +18,7 @@ import { NutritionView } from './views/NutritionView';
 import { HubView } from './views/HubView';
 import { VesselTrackerView } from './views/VesselTrackerView';
 import { TrainingView } from './views/TrainingView';
+import { TimetableScheduleView } from './views/TimetableScheduleView';
 import { LevelUpModal } from './components/LevelUpModal';
 import { useStore } from './store/useStore';
 import { useSystemEngine } from './db/engine';
@@ -49,7 +50,8 @@ export default function App() {
       <Toaster theme="dark" position="top-center" />
       {currentView === 'status' && <StatusView />}
       {currentView === 'quests' && <QuestView />}
-      {currentView === 'scheduler' && <SchedulerView />}
+      {currentView === 'scheduler' && <SchedulerView initialTab="directives" />}
+      {currentView === 'timetable' && <TimetableScheduleView />}
       {currentView === 'dungeons' && <DungeonView />}
       {currentView === 'tactical' && <MissionAnalyticsView />}
       {currentView === 'store' && <StoreView />}

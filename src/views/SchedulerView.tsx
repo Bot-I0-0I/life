@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, addXp, Task } from '../db/db';
 import { cn, getRank } from '../lib/utils';
-import { CalendarDays, CheckCircle, Circle, Plus, Clock, Repeat, AlertTriangle, Flame, Activity } from 'lucide-react';
+import { CalendarDays, CheckCircle, Circle, Plus, Clock, Repeat, AlertTriangle, Flame, Activity, LayoutGrid } from 'lucide-react';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
+import { TimetableScheduleView } from './TimetableScheduleView';
 
-export function SchedulerView() {
+export function SchedulerView({ initialTab = 'timetable' }: { initialTab?: 'timetable' | 'directives' }) {
+  const [activeTab, setActiveTab] = useState<'timetable' | 'directives'>(initialTab);
   const userStats = useLiveQuery(() => db.userStats.get(1));
   const tasks = useLiveQuery(() => db.tasks.orderBy('date').toArray());
   const [title, setTitle] = useState('');
@@ -82,50 +84,82 @@ export function SchedulerView() {
   const today = startOfDay(new Date());
 
   return (
-    <div className="space-y-8 pb-10">
-      <header className="hidden md:block border-b border-[#262626] pb-6">
-        <h2 className="text-3xl font-mono font-bold tracking-tight text-white uppercase" style={{ color: themeColor }}>DIRECTIVES</h2>
-        <p className="text-[#A3A3A3] text-sm mt-1 font-mono uppercase tracking-widest">Task Scheduler & Agenda</p>
-      </header>
+    <div className="space-y-6 pb-10">
+      {/* Top Navigation Tabs */}
+      <div className="flex items-center justify-between border-b border-[#262626] pb-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('timetable')}
+            className={cn(
+              "px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-sm transition-all flex items-center gap-2",
+              activeTab === 'timetable'
+                ? "bg-[#222] text-white border-b-2"
+                : "bg-[#101010] text-[#888] hover:text-white hover:bg-[#181818]"
+            )}
+            style={activeTab === 'timetable' ? { borderBottomColor: themeColor, color: themeColor } : {}}
+          >
+            <Clock className="w-4 h-4" />
+            DAILY TIMETABLE (2X:XX - 3X:XX)
+          </button>
 
-      {/* Streak Counter & Consistency Logger */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-5 relative overflow-hidden flex items-center justify-between">
-          <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2" style={{ borderColor: themeColor }}></div>
-          <div>
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] flex items-center mb-1">
-              <Flame className="w-3 h-3 mr-1 text-orange-400" />
-              CURRENT STREAK
-            </span>
-            <div className="text-3xl font-black font-mono text-white">
-              {userStats?.currentStreak || 0} <span className="text-sm font-normal text-[#A3A3A3]">DAYS</span>
-            </div>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] block mb-1">LONGEST STREAK</span>
-            <div className="text-xl font-bold font-mono text-[#E5E5E5]">{userStats?.longestStreak || 0} DAYS</div>
-          </div>
-        </div>
-        
-        <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-5 relative overflow-hidden flex items-center justify-between">
-          <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2" style={{ borderColor: themeColor }}></div>
-          <div>
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] flex items-center mb-1">
-              <Activity className="w-3 h-3 mr-1 text-blue-400" />
-              CONSISTENCY LOG
-            </span>
-            <div className="text-3xl font-black font-mono text-white">
-              {completedTasks.length}/{tasks.length} <span className="text-sm font-normal text-[#A3A3A3]">TASKS</span>
-            </div>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] block mb-1">COMPLETION RATE</span>
-            <div className="text-xl font-bold font-mono text-[#E5E5E5]">
-              {tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0}%
-            </div>
-          </div>
+          <button
+            onClick={() => setActiveTab('directives')}
+            className={cn(
+              "px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-sm transition-all flex items-center gap-2",
+              activeTab === 'directives'
+                ? "bg-[#222] text-white border-b-2"
+                : "bg-[#101010] text-[#888] hover:text-white hover:bg-[#181818]"
+            )}
+            style={activeTab === 'directives' ? { borderBottomColor: themeColor, color: themeColor } : {}}
+          >
+            <CalendarDays className="w-4 h-4" />
+            DIRECTIVES & TASKS
+          </button>
         </div>
       </div>
+
+      {activeTab === 'timetable' ? (
+        <TimetableScheduleView />
+      ) : (
+        <>
+          {/* Streak Counter & Consistency Logger */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-5 relative overflow-hidden flex items-center justify-between">
+              <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2" style={{ borderColor: themeColor }}></div>
+              <div>
+                <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] flex items-center mb-1">
+                  <Flame className="w-3 h-3 mr-1 text-orange-400" />
+                  CURRENT STREAK
+                </span>
+                <div className="text-3xl font-black font-mono text-white">
+                  {userStats?.currentStreak || 0} <span className="text-sm font-normal text-[#A3A3A3]">DAYS</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] block mb-1">LONGEST STREAK</span>
+                <div className="text-xl font-bold font-mono text-[#E5E5E5]">{userStats?.longestStreak || 0} DAYS</div>
+              </div>
+            </div>
+            
+            <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-5 relative overflow-hidden flex items-center justify-between">
+              <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2" style={{ borderColor: themeColor }}></div>
+              <div>
+                <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] flex items-center mb-1">
+                  <Activity className="w-3 h-3 mr-1 text-blue-400" />
+                  CONSISTENCY LOG
+                </span>
+                <div className="text-3xl font-black font-mono text-white">
+                  {completedTasks.length}/{tasks.length} <span className="text-sm font-normal text-[#A3A3A3]">TASKS</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-mono tracking-widest uppercase text-[#A3A3A3] block mb-1">COMPLETION RATE</span>
+                <div className="text-xl font-bold font-mono text-[#E5E5E5]">
+                  {tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0}%
+                </div>
+              </div>
+            </div>
+          </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
@@ -319,6 +353,8 @@ export function SchedulerView() {
           </form>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

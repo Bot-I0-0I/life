@@ -21,6 +21,7 @@ export interface UserStats {
   name?: string;
   avatar?: string;
   height?: number;
+  weight?: number;
   age?: number;
   gender?: 'male' | 'female' | 'other';
   notes?: string;
@@ -91,6 +92,8 @@ export interface VesselLog {
   bodyFat?: number;
   sleepHours?: number;
   stressLevel?: 1 | 2 | 3 | 4 | 5;
+  energyLevel?: number;
+  notes?: string;
 }
 
 export interface WeeklyReview {
@@ -185,6 +188,18 @@ export interface SystemLog {
   details?: string;
 }
 
+export interface TimetableBlock {
+  id?: number;
+  title: string;
+  category: 'hobby' | 'workout' | 'study' | 'work' | 'personal' | 'gaming' | 'rest';
+  startTime: string; // "08:00"
+  endTime: string;   // "09:30"
+  daysOfWeek: number[]; // [0,1,2,3,4,5,6] (0 = Sunday, 1 = Monday, etc)
+  color?: string;
+  notes?: string;
+  completedToday?: boolean;
+}
+
 export class SystemDatabase extends Dexie {
   userStats!: Table<UserStats, number>;
   quests!: Table<Quest, number>;
@@ -201,6 +216,7 @@ export class SystemDatabase extends Dexie {
   questTemplates!: Table<QuestTemplate, number>;
   missionLogs!: Table<MissionLog, number>;
   systemLogs!: Table<SystemLog, number>;
+  timetable!: Table<TimetableBlock, number>;
 
   constructor() {
     super('SystemDB');
@@ -330,6 +346,24 @@ export class SystemDatabase extends Dexie {
       missionLogs: '++id, date, category',
       systemLogs: '++id, timestamp, category, level'
     });
+    this.version(11).stores({
+      userStats: 'id',
+      quests: '++id, date, type, completed',
+      dungeons: '++id, status',
+      inventory: '++id, type, equipped',
+      shopItems: '++id, purchased',
+      vesselLogs: '++id, date',
+      weeklyReviews: '++id, weekStartDate, status',
+      tasks: '++id, date, completed',
+      ledger: '++id, date, type',
+      nutritionLogs: '++id, date, type',
+      tacticalLogs: '++id, date, game',
+      foodTemplates: '++id, name',
+      questTemplates: '++id, title',
+      missionLogs: '++id, date, category',
+      systemLogs: '++id, timestamp, category, level',
+      timetable: '++id, startTime, category'
+    });
   }
 }
 
@@ -380,6 +414,14 @@ db.on('populate', async () => {
     { title: '100 Pushups', attribute: 'STR', targetValue: 100, currentValue: 0, type: 'daily', completed: false, date: new Date().toISOString().split('T')[0], baseReward: 50 },
     { title: '10km Run', attribute: 'VIT', targetValue: 10, currentValue: 0, type: 'daily', completed: false, date: new Date().toISOString().split('T')[0], baseReward: 100 },
     { title: 'Read 1 Chapter', attribute: 'INT', targetValue: 1, currentValue: 0, type: 'daily', completed: false, date: new Date().toISOString().split('T')[0], baseReward: 30 },
+  ]);
+
+  await db.timetable.bulkAdd([
+    { title: 'Morning Conditioning & Stretch', category: 'workout', startTime: '07:00', endTime: '08:00', daysOfWeek: [1, 2, 3, 4, 5, 6, 0], color: '#EF4444', notes: 'Hydrate, mobility warm up and core' },
+    { title: 'Deep Focus Study / Skill Mastery', category: 'study', startTime: '09:00', endTime: '11:30', daysOfWeek: [1, 2, 3, 4, 5], color: '#A855F7', notes: 'No distractions, deep work block' },
+    { title: 'Hobby & Creative Crafting', category: 'hobby', startTime: '14:00', endTime: '15:30', daysOfWeek: [1, 2, 3, 4, 5, 6, 0], color: '#00F0FF', notes: 'Guitar, coding, drawing, or gaming' },
+    { title: 'Dungeon Physical Workout', category: 'workout', startTime: '17:30', endTime: '19:00', daysOfWeek: [1, 3, 5], color: '#F59E0B', notes: 'Heavy lifts or training plan' },
+    { title: 'Night Reading & Wind Down', category: 'rest', startTime: '21:30', endTime: '22:30', daysOfWeek: [0, 1, 2, 3, 4, 5, 6], color: '#10B981', notes: 'Screen detachment and recovery' },
   ]);
 });
 

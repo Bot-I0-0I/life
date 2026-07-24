@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { cn, getRank, RANK_TIERS } from '../lib/utils';
-import { Settings, User, Palette, Activity, Save, Upload, Download, Database, Trash2, Moon, Sun, AlertTriangle, Cloud, RefreshCw } from 'lucide-react';
+import { Settings, User, Palette, Activity, Save, Upload, Download, Database, Trash2, Moon, Sun, AlertTriangle, Cloud, RefreshCw, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../AuthContext';
 import { useCloudSync } from '../useCloudSync';
 import { format } from 'date-fns';
+import { ThemeGalleryModal } from '../components/ThemeGalleryModal';
 
 export function SettingsView() {
   const userStats = useLiveQuery(() => db.userStats.get(1));
   const { theme, toggleTheme, showActiveQuestTicker, showAttributeProgressBars, showRadarChart, showMuscleFigurine, toggleHUDComponent } = useStore();
   const { user, isGuest } = useAuth();
   const { isSyncing, lastSync, forceSync } = useCloudSync();
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   
   const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
   const rankColor = getRank(level).color;
@@ -23,6 +25,8 @@ export function SettingsView() {
 
   const [name, setName] = useState('');
   const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [weightLogNotice, setWeightLogNotice] = useState<string | null>(null);
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [fitnessGoal, setFitnessGoal] = useState<'lose' | 'maintain' | 'build'>('maintain');
@@ -45,6 +49,7 @@ export function SettingsView() {
     if (userStats) {
       setName(userStats.name || '');
       setHeight(userStats.height?.toString() || '');
+      setWeight(userStats.weight?.toString() || '');
       setAge(userStats.age?.toString() || '');
       setGender(userStats.gender || 'male');
       setFitnessGoal(userStats.fitnessGoal || 'maintain');
@@ -63,6 +68,31 @@ export function SettingsView() {
       setGameDifficulty((userStats as any).gameDifficulty || 'normal');
     }
   }, [userStats]);
+
+  const handleDirectLogWeight = async (valToLog?: number) => {
+    const targetVal = valToLog !== undefined ? valToLog : parseFloat(weight);
+    if (isNaN(targetVal) || targetVal <= 0) {
+      setWeightLogNotice('⚠️ Please enter a valid weight');
+      return;
+    }
+    const roundedVal = Number(targetVal.toFixed(1));
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    await db.userStats.update(1, { weight: roundedVal });
+    await db.vesselLogs.add({
+      date: todayStr,
+      weight: roundedVal,
+      energyLevel: 8,
+      sleepHours: 8,
+      notes: 'Quick logged via System Settings'
+    });
+    setWeight(roundedVal.toString());
+    setWeightLogNotice(`✅ WEIGHT LOGGED: ${roundedVal} KG (Synced to Vessel Tracker & Training Engine)`);
+    if (user) {
+      await forceSync();
+    }
+    window.dispatchEvent(new CustomEvent('userstats-updated', { detail: { ...userStats, weight: roundedVal } }));
+    setTimeout(() => setWeightLogNotice(null), 4000);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,6 +125,7 @@ export function SettingsView() {
     await db.userStats.update(1, {
       name,
       height: height ? parseFloat(height) : undefined,
+      weight: weight ? parseFloat(weight) : undefined,
       age: age ? parseInt(age) : undefined,
       gender,
       fitnessGoal,
@@ -345,6 +376,66 @@ export function SettingsView() {
               </h3>
               <p className="text-[10px] text-[#A3A3A3] font-mono tracking-widest uppercase">Required for advanced Vessel Tracker analysis (BMI/BMR).</p>
               
+              {/* Quick Weight Logger Block */}
+              <div className="p-4 bg-[#141414] border border-cyan-500/30 rounded-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-[#262626] pb-2">
+                  <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="w-4 h-4" /> FAST WEIGHT LOG
+                  </span>
+                  {height && weight && (
+                    <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded uppercase">
+                      BMI: {(parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2)).toFixed(1)}
+                    </span>
+                  )}
+                </div>
+
+                {weightLogNotice && (
+                  <div className="p-2 bg-emerald-950/60 border border-emerald-500/50 rounded text-[10px] font-mono text-emerald-400 font-bold uppercase animate-fadeIn">
+                    {weightLogNotice}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 tracking-widest uppercase">CURRENT WEIGHT (KG)</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      className="flex-1 bg-[#0A0A0A] border border-[#262626] rounded-sm px-4 py-2.5 text-white font-mono text-sm font-bold tracking-wider focus:outline-none focus:border-cyan-500 placeholder:text-[#555]"
+                      placeholder="e.g. 72.5"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleDirectLogWeight()}
+                      className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-mono text-xs font-bold uppercase rounded-sm transition-all whitespace-nowrap shadow-md"
+                    >
+                      LOG WEIGHT NOW
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Increment Chips */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <span className="text-[9px] font-mono text-[#A3A3A3] uppercase mr-1">QUICK ADJUST:</span>
+                  {[-1, -0.5, +0.5, +1].map(delta => (
+                    <button
+                      key={delta}
+                      type="button"
+                      onClick={() => {
+                        const curr = parseFloat(weight) || 70;
+                        const next = Math.max(1, curr + delta);
+                        handleDirectLogWeight(next);
+                      }}
+                      className="px-2.5 py-1 bg-[#0A0A0A] hover:bg-cyan-950/50 border border-[#262626] hover:border-cyan-500/50 text-[#CCC] hover:text-cyan-400 text-[10px] font-mono font-bold rounded transition-all"
+                    >
+                      {delta > 0 ? `+${delta}kg` : `${delta}kg`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 tracking-widest uppercase">HEIGHT (CM)</label>
@@ -534,8 +625,28 @@ export function SettingsView() {
                   <span className="text-[10px] font-mono text-white tracking-widest uppercase">{theme === 'dark' ? 'LIGHT MODE' : 'DARK MODE'}</span>
                 </button>
               </div>
+
+              {/* Theme Samples Gallery Launcher Banner */}
+              <div className="p-4 bg-gradient-to-r from-cyan-950/40 via-purple-950/20 to-[#141414] border border-cyan-500/40 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-cyan-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">UI THEME PRESET GALLERY</h4>
+                    <p className="text-[10px] font-mono text-[#A3A3A3]">Preview & switch between 7 visual UI styles and layouts live.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsGalleryOpen(true)}
+                  className="w-full sm:w-auto px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-mono text-xs font-bold uppercase rounded transition-all shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap"
+                >
+                  <Palette className="w-4 h-4" /> EXPLORE UI SAMPLES
+                </button>
+              </div>
+
               <p className="text-[10px] text-[#A3A3A3] font-mono tracking-widest uppercase">
-                Your system theme color is automatically determined by your current Rank. Level up to unlock new colors!
+                Your system theme color is automatically determined by your current Rank or manually selected below.
               </p>
               
               <div className="mt-4">
@@ -548,6 +659,12 @@ export function SettingsView() {
                 >
                   <option value="">AUTO (CURRENT RANK)</option>
                   <option value="#00F0FF">SYSTEM DEFAULT (CYAN)</option>
+                  <option value="#818CF8">MONARCH INDIGO (#818CF8)</option>
+                  <option value="#A855F7">S-CLASS PURPLE (#A855F7)</option>
+                  <option value="#EF4444">CRIMSON BERSERKER (#EF4444)</option>
+                  <option value="#F59E0B">GOLDEN NATIONAL (#F59E0B)</option>
+                  <option value="#10B981">EMERALD MATRIX (#10B981)</option>
+                  <option value="#2563EB">COBALT BLUE (#2563EB)</option>
                   {RANK_TIERS.filter(t => level >= t.minLevel).map(t => (
                     <option key={t.rank} value={t.color}>{t.rank.toUpperCase()} ({t.color})</option>
                   ))}
@@ -555,18 +672,21 @@ export function SettingsView() {
               </div>
               
               <div className="mt-4">
-                <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 tracking-widest uppercase">UI THEME (RANK UNLOCKS)</label>
+                <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 tracking-widest uppercase">UI THEME LAYOUT</label>
                 <select 
                   value={uiTheme}
                   onChange={(e) => setUiTheme(e.target.value)}
                   className="w-full bg-[#141414] border border-[#262626] rounded-sm px-4 py-3 text-white font-mono text-xs tracking-wider focus:outline-none focus:ring-1 transition-colors uppercase"
                   style={{ '--tw-ring-color': themeColor, outlineColor: themeColor } as any}
                 >
-                  <option value="default">DEFAULT (STANDARD UI)</option>
-                  {level >= 10 && <option value="s_class">S-CLASS UI (RANK S+)</option>}
-                  {level >= 25 && <option value="monarch">MONARCH UI (RANK MONARCH)</option>}
+                  <option value="default">SOLO CYAN (STANDARD UI)</option>
+                  <option value="monarch">MONARCH VOID (INDIGO GRID)</option>
+                  <option value="s_class">S-CLASS OVERDRIVE (PURPLE RADIAL)</option>
+                  <option value="shadow_red">CRIMSON SHADOW (BERSERKER)</option>
+                  <option value="golden_national">GOLDEN NATIONAL (SSS LUXURY)</option>
+                  <option value="emerald_vessel">EMERALD MATRIX (BIO-TECH TERMINAL)</option>
+                  <option value="solar_daylight">SOLAR DAYLIGHT (MINIMALIST LIGHT MODE)</option>
                 </select>
-                <p className="text-[9px] font-mono text-[#A3A3A3] mt-2 uppercase tracking-wide">S-Class layouts unlock at Rank S+ (Level 10+). Monarch layout unlocks at Level 25+.</p>
               </div>
             </div>
 
@@ -786,6 +906,13 @@ export function SettingsView() {
           </div>
         </div>
       )}
+      {/* Theme Samples Gallery Modal */}
+      <ThemeGalleryModal 
+        isOpen={isGalleryOpen} 
+        onClose={() => setIsGalleryOpen(false)} 
+        currentThemeColor={themeColor}
+        currentUiTheme={uiTheme}
+      />
     </div>
   );
 }

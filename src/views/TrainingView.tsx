@@ -424,16 +424,35 @@ export function TrainingView() {
     [last7Days]
   );
 
-  // User Weight & Height Body Parameters State (persisted locally)
-  const [userWeightKg, setUserWeightKg] = useState<number>(() => {
-    const saved = localStorage.getItem('user_body_weight_kg');
-    return saved ? Number(saved) : (latestVessel?.weight || 75);
-  });
+  // User Weight & Height Body Parameters State (auto-fetched from user profile)
+  const [userWeightKg, setUserWeightKg] = useState<number>(75);
+  const [userHeightCm, setUserHeightCm] = useState<number>(175);
+  const [isSyncedWithProfile, setIsSyncedWithProfile] = useState<boolean>(true);
 
-  const [userHeightCm, setUserHeightCm] = useState<number>(() => {
-    const saved = localStorage.getItem('user_body_height_cm');
-    return saved ? Number(saved) : (userStats?.height || 175);
-  });
+  // Sync state automatically when userStats or latestVessel changes in Dexie
+  useEffect(() => {
+    let weightVal = 75;
+    let heightVal = 175;
+
+    if (latestVessel?.weight) {
+      weightVal = latestVessel.weight;
+    } else if (userStats?.weight) {
+      weightVal = userStats.weight;
+    } else {
+      const saved = localStorage.getItem('user_body_weight_kg');
+      if (saved) weightVal = Number(saved);
+    }
+
+    if (userStats?.height) {
+      heightVal = userStats.height;
+    } else {
+      const saved = localStorage.getItem('user_body_height_cm');
+      if (saved) heightVal = Number(saved);
+    }
+
+    setUserWeightKg(weightVal);
+    setUserHeightCm(heightVal);
+  }, [userStats?.height, userStats?.weight, latestVessel?.weight]);
 
   const [userPrimaryGoal, setUserPrimaryGoal] = useState<'all' | 'fat_loss' | 'muscle_gain' | 'strength' | 'calisthenics' | 'joint_care'>(() => {
     const saved = localStorage.getItem('user_primary_training_goal');
@@ -455,15 +474,36 @@ export function TrainingView() {
     return { label: 'Dense Body Weight / Heavy', recommendGoal: 'joint_care', desc: 'Low-impact joint protective conditioning & calorie shred recommended.' };
   }, [bmi]);
 
-  // Persist weight changes
-  const handleUpdateWeight = (val: number) => {
+  // Persist weight changes & sync to system userStats + vessel logs
+  const handleUpdateWeight = async (val: number) => {
     setUserWeightKg(val);
     localStorage.setItem('user_body_weight_kg', String(val));
+    try {
+      await db.userStats.update(1, { weight: val });
+      await db.vesselLogs.add({
+        date: today,
+        weight: val,
+        energyLevel: 8,
+        sleepHours: 8,
+        notes: 'Updated via Training View metrics sync'
+      });
+      setIsSyncedWithProfile(true);
+      logSystemEvent('VESSEL', 'INFO', `Auto-synced body weight to ${val}kg`);
+    } catch (e) {
+      console.error('Failed to sync weight to userStats:', e);
+    }
   };
 
-  const handleUpdateHeight = (val: number) => {
+  const handleUpdateHeight = async (val: number) => {
     setUserHeightCm(val);
     localStorage.setItem('user_body_height_cm', String(val));
+    try {
+      await db.userStats.update(1, { height: val });
+      setIsSyncedWithProfile(true);
+      logSystemEvent('VESSEL', 'INFO', `Auto-synced height to ${val}cm`);
+    } catch (e) {
+      console.error('Failed to sync height to userStats:', e);
+    }
   };
 
   const handleUpdateGoal = (goal: 'all' | 'fat_loss' | 'muscle_gain' | 'strength' | 'calisthenics' | 'joint_care') => {
@@ -585,9 +625,22 @@ export function TrainingView() {
 
   // Calculate Compatibility Match Score for a plan
   const getCompatibilityMatch = (plan: WorkoutPlanItem) => {
-    if (plan.targetGoal === userPrimaryGoal) return { score: 98, badge: '🔥 PERFECT MATCH', color: 'text-emerald-400 bg-emerald-950 border-emerald-500' };
-    if (plan.targetGoal === bodyTypeCategory.recommendGoal) return { score: 95, badge: '💪 HIGH BODY MATCH', color: 'text-cyan-400 bg-cyan-950 border-cyan-500' };
-    return { score: 85, badge: '⚡ SUITABLE', color: 'text-amber-400 bg-amber-950 border-amber-600' };
+    const isBodyMatch = plan.targetGoal === bodyTypeCategory.recommendGoal;
+    const profileGoal = userStats?.fitnessGoal || 'maintain';
+    const isUserGoalMatch = (profileGoal === 'lose' && plan.targetGoal === 'fat_loss') ||
+                            (profileGoal === 'build' && plan.targetGoal === 'muscle_gain') ||
+                            (profileGoal === 'maintain' && (plan.targetGoal === 'strength' || plan.targetGoal === 'calisthenics'));
+
+    if (isBodyMatch && isUserGoalMatch) {
+      return { score: 99, badge: '🔥 PERFECT MATCH', color: 'text-emerald-400 bg-emerald-950 border-emerald-500' };
+    }
+    if (isBodyMatch) {
+      return { score: 95, badge: '💪 BODY RECOMMENDED', color: 'text-cyan-400 bg-cyan-950 border-cyan-500' };
+    }
+    if (isUserGoalMatch) {
+      return { score: 90, badge: '🎯 TARGET MATCH', color: 'text-indigo-400 bg-indigo-950 border-indigo-500' };
+    }
+    return { score: 80, badge: '⚡ SUITABLE', color: 'text-amber-400 bg-amber-950 border-amber-600' };
   };
 
   // Start Workout for a specific Day
