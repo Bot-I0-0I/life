@@ -1,34 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { OnboardingGuide } from './OnboardingGuide';
 import { ThemeGalleryModal } from './ThemeGalleryModal';
-import { Activity, Crosshair, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet, Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit, Rocket, Package, Plus, CheckCircle, Dumbbell, Terminal, Heart, Palette, Clock } from 'lucide-react';
+import { CommandPalette } from './CommandPalette';
+import {
+  Activity, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet,
+  Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit,
+  Dumbbell, Heart, Palette, Clock, Search, ChevronLeft, ChevronRight, Zap, Coins
+} from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../AuthContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { isCloaked, currentView, toggleCloak, setView, showActiveQuestTicker } = useStore();
+  const { isCloaked, currentView, toggleCloak, setView } = useStore();
   const userStats = useLiveQuery(() => db.userStats.get(1));
   const { user, isGuest, login, logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
+
   const activeQuestsList = useLiveQuery(async () => {
     const list = await db.quests.toArray();
     return list.filter(q => !q.completed);
   }) || [];
 
-  const isPenalty = false; // Penalty system removed
+  const pendingReviews = useLiveQuery(() => db.weeklyReviews?.where('status').equals('pending').toArray()) || [];
+  const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
+  const { color: rankColor, rank } = getRank(level);
+  const themeColor = userStats?.selectedColor || rankColor;
+  const uiTheme = userStats?.uiTheme || 'default';
+  const credits = userStats?.credits || 0;
 
-  const navCategories: Array<{ title: string; items: Array<{ id: string; icon: any; label: string }> }> = [
+  const navCategories = [
     {
       title: "CORE CHANNELS",
       items: [
+        { id: 'hub', icon: LayoutGrid, label: 'Command Hub' },
         { id: 'status', icon: Activity, label: 'Status Window' },
-        { id: 'hub', icon: LayoutGrid, label: 'System Hub' },
-        { id: 'quests', icon: Shield, label: 'Daily Quests' },
         { id: 'scheduler', icon: CalendarDays, label: 'Directives' },
         { id: 'timetable', icon: Clock, label: 'Daily Timetable' },
       ]
@@ -36,7 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       title: "PHYSICAL & VITALITY",
       items: [
-        { id: 'training', icon: Dumbbell, label: 'Training & Workouts' },
+        { id: 'training', icon: Dumbbell, label: 'Training Engine' },
         { id: 'nutrition', icon: Flame, label: 'Diets & Macros' },
         { id: 'vessel', icon: Heart, label: 'Vessel Tracker' },
       ]
@@ -44,13 +58,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     {
       title: "OPERATIONS",
       items: [
-        { id: 'dungeons', icon: Swords, label: 'Instances' },
-        { id: 'tactical', icon: BrainCircuit, label: 'Goal Tracking' },
-        { id: 'reviews', icon: BookOpen, label: 'Weekly Review' },
+        { id: 'dungeons', icon: Swords, label: 'Instances / Bosses' },
+        { id: 'tactical', icon: BrainCircuit, label: 'Goal Analytics' },
+        { id: 'reviews', icon: BookOpen, label: 'Weekly Review', badge: pendingReviews.length },
       ]
     },
     {
-      title: "TREASURY & CONFIG",
+      title: "RESOURCES & CONFIG",
       items: [
         { id: 'store', icon: ShoppingCart, label: 'System Store' },
         { id: 'ledger', icon: Wallet, label: 'Treasury' },
@@ -58,12 +72,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       ]
     }
   ];
-
-  const pendingReviews = useLiveQuery(() => db.weeklyReviews?.where('status').equals('pending').toArray()) || [];
-  const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
-  const { color: rankColor } = getRank(level);
-  const themeColor = userStats?.selectedColor || rankColor;
-  const uiTheme = userStats?.uiTheme || 'default';
 
   const themeClasses: Record<string, string> = {
     default: 'border-transparent',
@@ -75,274 +83,289 @@ export function Layout({ children }: { children: React.ReactNode }) {
     solar_daylight: 'border-blue-500/30 bg-[#F8FAFC]',
   };
 
-  const mobileNavItems = [
+  const mobileNavItems: Array<{ id: string; icon: any; label: string; badge?: number | string }> = [
     { id: 'status', icon: Activity, label: 'STATUS' },
+    { id: 'timetable', icon: Clock, label: 'TIMETABLE', badge: `${userStats?.currentStreak || 0}D` },
     { id: 'training', icon: Dumbbell, label: 'TRAINING' },
-    { id: 'hub', icon: LayoutGrid, label: 'HUB' },
     { id: 'nutrition', icon: Flame, label: 'DIETS' },
     { id: 'vessel', icon: Heart, label: 'VESSEL' },
-  ] as const;
+  ];
 
   const viewTitles: Record<string, { title: string, subtitle: string }> = {
+    hub: { title: 'COMMAND HUB', subtitle: 'Central Control Node & System Overview' },
     status: { title: 'STATUS WINDOW', subtitle: 'Identity Dashboard & Attribute Matrix' },
-    quests: { title: 'DAILY QUESTS', subtitle: 'Task Execution & Rewards' },
-    hub: { title: 'SYSTEM HUB', subtitle: 'Central Control Node' },
-    scheduler: { title: 'DIRECTIVES', subtitle: 'Schedule & Routines' },
-    dungeons: { title: 'INSTANCES', subtitle: 'Combat & Challenges' },
-    tactical: { title: 'GOALS', subtitle: 'Tactical Review' },
-    training: { title: 'TRAINING ENGINE', subtitle: 'Executable Workout Plans & Active Logs' },
-    nutrition: { title: 'DIETS & MACROS', subtitle: 'Metabolism & SQL Data House' },
-    vessel: { title: 'VESSEL TRACKER', subtitle: 'Physical Body & Sleep Biometrics' },
-    store: { title: 'SYSTEM STORE', subtitle: 'Resource Exchange' },
-    ledger: { title: 'TREASURY', subtitle: 'Financial Ledger' },
-    reviews: { title: 'WEEKLY REVIEW', subtitle: 'Performance Analysis' },
-    settings: { title: 'SYSTEM SETTINGS', subtitle: 'Configuration' },
+    scheduler: { title: 'DIRECTIVES', subtitle: 'Schedule, Routines & Habit Tracking' },
+    timetable: { title: 'DAILY TIMETABLE', subtitle: '24-Hour Schedule Matrix & Focus Sessions' },
+    dungeons: { title: 'INSTANCES', subtitle: 'Combat, Boss Battles & Dungeons' },
+    tactical: { title: 'GOAL ANALYTICS', subtitle: 'Tactical Directives & Milestone Tracking' },
+    training: { title: 'TRAINING ENGINE', subtitle: 'Executable Workout Plans & Body Targets' },
+    nutrition: { title: 'DIETS & MACROS', subtitle: 'Metabolism, SQL Food House & Logs' },
+    vessel: { title: 'VESSEL TRACKER', subtitle: 'Physical Biometrics, Sleep & Weight' },
+    store: { title: 'SYSTEM STORE', subtitle: 'Equipment, Consumables & Rewards' },
+    ledger: { title: 'TREASURY', subtitle: 'Financial Ledger & Credit Balances' },
+    reviews: { title: 'WEEKLY REVIEW', subtitle: 'Performance Analysis & Audits' },
+    settings: { title: 'SYSTEM SETTINGS', subtitle: 'Interface Styling & User Preferences' },
   };
 
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const currentTitleInfo = viewTitles[currentView] || { title: 'SYSTEM', subtitle: 'Active Module' };
+
+  // Flattened nav items for mobile drawer search
+  const allNavItems = navCategories.flatMap(cat => cat.items);
+  const filteredMobileItems = allNavItems.filter(item =>
+    item.label.toLowerCase().includes(mobileSearchQuery.toLowerCase())
+  );
 
   return (
     <div className={cn(
-      "min-h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans flex flex-col md:flex-row transition-all duration-500 relative border-2",
-      themeClasses[uiTheme] || 'border-transparent',
-      isPenalty && "bg-[#1A0505] border-red-900"
+      "min-h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans flex flex-col md:flex-row transition-all duration-500 relative border-2 overflow-x-hidden max-w-vw",
+      themeClasses[uiTheme] || 'border-transparent'
     )}>
       {userStats?.backgroundImage && (
-        <div 
+        <div
           className={cn(
             "absolute inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none transition-opacity duration-500",
             isCloaked ? "opacity-60" : "opacity-10"
-          )} 
+          )}
           style={{ backgroundImage: `url(${userStats.backgroundImage})` }}
         />
       )}
-      
+
       {/* Sidebar (Desktop) */}
-      <nav className={cn(
-        "hidden md:flex md:flex-col md:w-64 border-r border-[#262626] bg-[#0A0A0A]/90 backdrop-blur-md z-50 p-4 overflow-y-auto custom-scrollbar space-y-2 transition-colors duration-500 relative",
-        uiTheme === 'monarch' && "bg-[#05050A]/90 border-indigo-500/50 shadow-[10px_0_50px_-15px_rgba(99,102,241,0.4)]",
-        uiTheme === 'national' && "border-cyan-500/20",
-        uiTheme === 'sss' && "border-purple-500/20",
-        uiTheme === 'ss' && "border-red-500/20",
-        uiTheme === 's_plus' && "border-yellow-400/30",
-        uiTheme === 's_class' && "border-purple-500/50 shadow-[10px_0_40px_-15px_rgba(168,85,247,0.3)]",
-        uiTheme === 'elite' && "border-blue-500/20",
-        isPenalty && "border-red-900/50 bg-[#1A0505]/90"
+      <aside className={cn(
+        "hidden md:flex md:flex-col border-r border-[#262626] bg-[#0A0A0A]/95 backdrop-blur-md z-50 p-3 transition-all duration-300 relative flex-shrink-0",
+        isSidebarCollapsed ? "w-20" : "w-64",
+        uiTheme === 'monarch' && "bg-[#05050A]/95 border-indigo-500/40 shadow-[10px_0_50px_-15px_rgba(99,102,241,0.3)]",
+        uiTheme === 's_class' && "border-purple-500/40 shadow-[10px_0_40px_-15px_rgba(168,85,247,0.25)]"
       )}>
-        <div className="flex flex-col mb-8 px-4 relative">
-          {uiTheme === 'monarch' && (
-            <>
-              <div className="absolute -top-4 -left-4 w-32 h-32 bg-indigo-500/30 rounded-full blur-3xl pointer-events-none animate-pulse" />
-              <div className="absolute top-10 -right-4 w-20 h-20 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
-            </>
-          )}
-          {uiTheme === 's_class' && (
-            <div className="absolute -top-4 -left-4 w-24 h-24 bg-purple-500/30 rounded-full blur-2xl pointer-events-none animate-pulse" />
-          )}
-          <h1 className={cn(
-            "text-2xl font-bold tracking-tighter uppercase font-mono transition-all duration-500 relative z-10",
-            isPenalty ? "text-red-500" : ""
-          )} style={!isPenalty ? { color: themeColor, textShadow: `0 0 10px ${themeColor}80` } : {}}>
-            {isPenalty ? 'PENALTY ZONE' : 
-             uiTheme === 'monarch' ? 'MONARCH DOMAIN' : 
-             uiTheme === 's_class' ? 'S-CLASS SYSTEM' : 
-             'LIFE CONTROL SYSTEM'}
-          </h1>
-          
-          {(user && !isGuest) ? (
-            <div className="flex items-center mt-4 space-x-3 bg-[#141414] p-2 rounded-lg border border-[#262626]">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-[#262626]" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[#262626] flex items-center justify-center">
-                  <User className="w-4 h-4 text-[#A3A3A3]" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono text-white truncate">{user.displayName || user.email || 'User'}</p>
-                <p className="text-[10px] font-mono text-[#A3A3A3] truncate">{user.email}</p>
-              </div>
+        {/* Sidebar Header & Collapse Toggle */}
+        <div className="flex items-center justify-between mb-6 px-2 pt-2 relative">
+          {!isSidebarCollapsed && (
+            <div className="min-w-0">
+              <h1
+                className="text-lg font-black tracking-tighter uppercase font-mono truncate"
+                style={{ color: themeColor, textShadow: `0 0 10px ${themeColor}60` }}
+              >
+                {uiTheme === 'monarch' ? 'MONARCH' : uiTheme === 's_class' ? 'S-CLASS' : 'SYSTEM'}
+              </h1>
+              <p className="text-[9px] font-mono text-[#666] tracking-widest uppercase truncate">LIFE CONTROL v3.5</p>
             </div>
-          ) : userStats?.name ? (
-            <div className="flex items-center mt-4 space-x-3 bg-[#141414] p-2 rounded-lg border border-[#262626]">
-              {userStats.avatar ? (
-                <img src={userStats.avatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-[#262626]" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[#262626] flex items-center justify-center">
-                  <User className="w-4 h-4 text-[#A3A3A3]" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono text-white truncate">{userStats.name}</p>
-                <p className="text-[10px] font-mono text-[#A3A3A3]">Lvl {Math.floor((userStats.xp || 0) / 1000) + 1} • {userStats.role || 'Player'}</p>
-              </div>
-            </div>
-          ) : null}
+          )}
+
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="p-1.5 rounded-md bg-[#141414] hover:bg-[#222] border border-[#262626] text-[#A3A3A3] hover:text-white transition-colors ml-auto touch-target"
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto no-scrollbar pr-1 py-2">
+        {/* User Card */}
+        {!isSidebarCollapsed && (
+          <div className="mb-4 p-2.5 bg-[#121212] border border-[#262626] rounded-lg flex items-center space-x-3">
+            {(user && !isGuest && user.photoURL) || userStats?.avatar ? (
+              <img
+                src={(user && !isGuest && user.photoURL) || userStats?.avatar}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover border border-[#333]"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-[#333] flex items-center justify-center">
+                <User className="w-4 h-4 text-cyan-400" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-mono font-bold text-white truncate">
+                {(user && !isGuest && (user.displayName || user.email)) || userStats?.name || 'Player'}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
+                  LVL {level}
+                </span>
+                <span className="text-[9px] font-mono text-[#888] uppercase truncate">{rank}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Categories & Buttons */}
+        <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-1 py-1">
           {navCategories.map((category) => (
             <div key={category.title} className="space-y-1">
-              <span className="text-[9px] font-mono font-bold tracking-widest text-[#555] px-3 uppercase block">
-                {category.title}
-              </span>
-              <div className="space-y-0.5">
-                {category.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setView(item.id as any)}
-                    className={cn(
-                      "w-full flex items-center space-x-3 p-2 rounded-md transition-all duration-200 relative",
-                      currentView === item.id 
-                        ? (isPenalty ? "bg-red-900/20 text-red-400" : "bg-[#1A1A1A]")
-                        : "text-[#A3A3A3] hover:bg-[#141414] hover:text-white"
-                    )}
-                    style={currentView === item.id && !isPenalty ? { color: themeColor } : {}}
-                  >
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-xs font-mono uppercase tracking-wider">{item.label}</span>
-                    {item.id === 'reviews' && pendingReviews.length > 0 && (
-                      <span className="absolute top-2.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                    )}
-                  </button>
-                ))}
+              {!isSidebarCollapsed && (
+                <span className="text-[9px] font-mono font-bold tracking-widest text-[#555] px-2 uppercase block">
+                  {category.title}
+                </span>
+              )}
+              <div className="space-y-1">
+                {category.items.map((item) => {
+                  const isSelected = currentView === item.id;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setView(item.id as any)}
+                      title={item.label}
+                      className={cn(
+                        "w-full flex items-center p-2.5 rounded-lg transition-all duration-200 relative group touch-target",
+                        isSidebarCollapsed ? "justify-center px-0" : "space-x-3 justify-start",
+                        isSelected
+                          ? "bg-[#181818] border border-cyan-500/40 text-cyan-400 font-bold shadow-sm"
+                          : "text-[#A3A3A3] hover:bg-[#141414] hover:text-white border border-transparent"
+                      )}
+                      style={isSelected ? { color: themeColor } : {}}
+                    >
+                      <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected && "animate-pulse")} />
+                      {!isSidebarCollapsed && (
+                        <span className="text-xs font-mono uppercase tracking-wider truncate flex-1 text-left">
+                          {item.label}
+                        </span>
+                      )}
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className={cn(
+                          "px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-500 text-black",
+                          isSidebarCollapsed && "absolute top-1 right-1"
+                        )}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex flex-col mt-auto space-y-2">
+        {/* Sidebar Footer Actions */}
+        <div className="mt-auto pt-3 border-t border-[#262626] space-y-1.5">
           <button
             onClick={() => setIsThemeModalOpen(true)}
-            className="flex items-center space-x-3 p-3 rounded-lg text-cyan-400 bg-cyan-950/30 border border-cyan-500/30 hover:bg-cyan-900/40 hover:border-cyan-400 transition-all font-mono text-xs uppercase font-bold"
-            title="Open UI Theme Gallery & Samples"
+            className={cn(
+              "w-full flex items-center p-2.5 rounded-lg text-cyan-400 bg-cyan-950/30 border border-cyan-500/30 hover:bg-cyan-900/40 transition-all font-mono text-xs uppercase font-bold touch-target",
+              isSidebarCollapsed ? "justify-center px-0" : "justify-start space-x-2"
+            )}
+            title="Open UI Theme Gallery"
           >
-            <Palette className="w-5 h-5 text-cyan-400" />
-            <span>UI Theme Gallery</span>
+            <Palette className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+            {!isSidebarCollapsed && <span className="truncate">Theme Gallery</span>}
           </button>
-          {user && !isGuest ? (
-            <button
-              onClick={logout}
-              className="flex items-center space-x-3 p-3 rounded-lg text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="text-sm font-medium">Cloud Logout</span>
-            </button>
-          ) : (
-            <button
-              onClick={login}
-              className="flex items-center space-x-3 p-3 rounded-lg text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition-all"
-            >
-              <LogIn className="w-5 h-5" />
-              <span className="text-sm font-medium">Cloud Login</span>
-            </button>
-          )}
+
           <button
             onClick={toggleCloak}
-            className="flex items-center space-x-3 p-3 rounded-lg text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition-all"
+            className={cn(
+              "w-full flex items-center p-2.5 rounded-lg text-[#A3A3A3] hover:bg-[#1A1A1A] hover:text-white transition-all font-mono text-xs touch-target",
+              isSidebarCollapsed ? "justify-center px-0" : "justify-start space-x-2"
+            )}
+            title="System Cloak Toggle"
           >
-            {isCloaked ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            <span className="text-sm font-medium">System Cloak</span>
+            {isCloaked ? <EyeOff className="w-4 h-4 flex-shrink-0 text-amber-400" /> : <Eye className="w-4 h-4 flex-shrink-0" />}
+            {!isSidebarCollapsed && <span className="truncate">Cloak {isCloaked ? 'ON' : 'OFF'}</span>}
           </button>
         </div>
-      </nav>
+      </aside>
 
-      {/* Bottom Bar (Mobile) */}
-      <nav className={cn(
-        "md:hidden fixed bottom-0 left-0 right-0 border-t border-[#262626] bg-[#0A0A0A]/95 backdrop-blur-lg z-50 flex justify-around p-1 transition-colors duration-500",
-        uiTheme === 'monarch' && "bg-[#05050A]/95 border-indigo-500/30",
-        isPenalty && "border-red-900/50 bg-[#1A0505]/95"
-      )}>
-        {mobileNavItems.map((item) => {
-          const isHub = item.id === 'hub';
-          const isSelected = currentView === item.id;
-          return (
+      {/* Main Container Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        {/* Top Header Bar */}
+        <header className="bg-[#0A0A0A]/95 border-b border-[#262626] px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-3 sticky top-0 z-30 backdrop-blur-md">
+          {/* Left: Mobile Drawer Trigger & Command Search Button */}
+          <div className="flex items-center gap-2 min-w-0">
             <button
-              key={item.id}
-              onClick={() => setView(item.id as any)}
-              className={cn(
-                "flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 relative flex-1 min-w-0",
-                isHub && "relative -top-2 bg-[#121824] border border-cyan-500/50 shadow-md shadow-cyan-950/50 rounded-xl px-1.5 py-1",
-                isSelected
-                  ? (isPenalty ? "text-red-400" : "")
-                  : "text-[#666666] hover:text-[#A3A3A3]"
-              )}
-              style={isSelected && !isPenalty ? { color: themeColor } : {}}
-            >
-              <item.icon className={cn("w-5 h-5 mb-0.5", isHub && "text-cyan-400")} />
-              <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-center truncate w-full px-0.5 font-bold">
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Main Content */}
-      <main className={cn(
-        "flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto no-scrollbar relative z-10 min-w-0",
-        isCloaked && "blur-sm transition-all duration-300 hover:blur-none"
-      )}>
-        {/* Mobile Header */}
-        <div className="md:hidden flex justify-between items-center mb-6 border-b border-[#262626] pb-4 gap-2">
-          <div className="flex flex-col min-w-0 flex-1">
-            <h1 
-              className="text-base sm:text-lg font-black font-mono tracking-wider uppercase truncate" 
-              style={{ color: themeColor, textShadow: `0 0 10px ${themeColor}40` }}
-            >
-              {currentTitleInfo.title}
-            </h1>
-            <p className="text-[9px] text-[#A3A3A3] font-mono uppercase tracking-wider mt-0.5 truncate">
-              {currentTitleInfo.subtitle}
-            </p>
-          </div>
-          
-          <div className="flex space-x-1.5 items-center">
-            <button 
-              onClick={() => setIsThemeModalOpen(true)}
-              className="p-2 bg-[#141414] hover:bg-cyan-950/50 rounded-sm flex items-center justify-center transition-colors border border-cyan-500/30 text-cyan-400"
-              title="UI Theme Gallery & Samples"
-            >
-              <Palette className="w-4 h-4 text-cyan-400" />
-            </button>
-            <button 
-              onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)} 
-              className="p-2 bg-[#141414] hover:bg-[#262626] rounded-sm flex items-center justify-center transition-colors border border-[#262626]"
-              title="Toggle Menu Navigation"
+              onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+              className="hidden max-md:inline-flex p-2 bg-[#141414] hover:bg-[#222] border border-[#262626] rounded-md text-[#A3A3A3] hover:text-white touch-target flex-shrink-0 items-center justify-center"
+              title="Toggle Menu"
             >
               {isMobileDrawerOpen ? <X className="w-5 h-5 text-cyan-400" /> : <Menu className="w-5 h-5 text-cyan-400" />}
             </button>
-            {user && !isGuest ? (
-              <button onClick={logout} className="p-2 bg-[#141414] hover:bg-red-900/20 hover:text-red-400 rounded-sm flex items-center justify-center transition-colors border border-[#262626]" title="Cloud Logout">
-                <LogOut className="w-4 h-4 text-[#A3A3A3]" />
-              </button>
-            ) : (
-              <button onClick={login} className="p-2 bg-[#141414] hover:bg-[#262626] rounded-sm flex items-center justify-center transition-colors border border-[#262626]" title="Cloud Login">
-                <LogIn className="w-4 h-4 text-[#A3A3A3]" />
-              </button>
-            )}
-            <button onClick={() => setView('settings')} className="p-2 bg-[#141414] hover:bg-[#262626] rounded-sm flex items-center justify-center transition-colors border border-[#262626]">
-              <Settings className="w-4 h-4 text-[#A3A3A3]" />
+
+            {/* Quick Command Search Button */}
+            <button
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-[#121212] hover:bg-[#1A1A1A] border border-[#262626] hover:border-cyan-500/40 rounded-lg text-xs font-mono text-[#888] hover:text-white transition-all touch-target"
+              title="Open Command Search (Ctrl+K)"
+            >
+              <Search className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <span className="hidden sm:inline-block">Search / Jump to View...</span>
+              <span className="sm:hidden text-[11px] font-bold text-[#AAA]">SEARCH</span>
+              <span className="hidden md:inline-block text-[9px] bg-[#1C1C1C] border border-[#333] px-1.5 py-0.5 rounded text-[#666] ml-2">
+                Ctrl+K
+              </span>
             </button>
+
+            {/* View Breadcrumb / Title (Desktop) */}
+            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-[#262626] min-w-0">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-white truncate">
+                {currentTitleInfo.title}
+              </span>
+              <span className="text-[10px] font-mono text-[#666] truncate hidden xl:inline-block">
+                • {currentTitleInfo.subtitle}
+              </span>
+            </div>
+          </div>
+
+          {/* Right Top Bar Badges */}
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            {/* Player Level Badge */}
+            <div
+              onClick={() => setView('status')}
+              className="cursor-pointer bg-[#121212] border border-[#262626] hover:border-cyan-500/50 px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg flex items-center gap-1.5 transition-all"
+            >
+              <Zap className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="flex items-center gap-1 font-mono text-xs">
+                <span className="font-bold text-white">LVL {level}</span>
+                <span className="text-[10px] text-cyan-400 font-bold bg-cyan-950/60 px-1 py-0.2 rounded border border-cyan-800 hidden sm:inline-block">
+                  {rank}
+                </span>
+              </div>
+            </div>
+
+            {/* Credits Counter */}
+            <div
+              onClick={() => setView('ledger')}
+              className="cursor-pointer bg-[#121212] border border-[#262626] hover:border-amber-500/50 px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg flex items-center gap-1.5 transition-all font-mono text-xs text-amber-400 font-bold"
+            >
+              <Coins className="w-3.5 h-3.5 text-amber-400" />
+              <span>{credits.toLocaleString()} G</span>
+            </div>
+
+            {/* Cloud Auth Button */}
             {user && !isGuest ? (
-              <div className="w-10 h-10 rounded-sm overflow-hidden border border-[#262626] bg-[#141414]">
-                {user.photoURL ? (
-                   <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                ) : (
-                   <div className="w-full h-full flex items-center justify-center"><User className="w-5 h-5 text-[#A3A3A3]" /></div>
-                )}
-              </div>
-            ) : userStats?.avatar ? (
-              <div className="w-10 h-10 rounded-sm overflow-hidden border border-[#262626] bg-[#141414]">
-                <img src={userStats.avatar} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              </div>
+              <button
+                onClick={logout}
+                className="hidden sm:flex items-center gap-1.5 p-2 bg-[#121212] hover:bg-red-950/40 border border-[#262626] hover:border-red-500/40 rounded-lg text-xs font-mono text-[#888] hover:text-red-400 transition-colors touch-target"
+                title="Cloud Logout"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             ) : (
-              <div className="w-10 h-10 rounded-sm bg-[#141414] flex items-center justify-center border border-[#262626]">
-                <User className="w-5 h-5 text-[#A3A3A3]" />
-              </div>
+              <button
+                onClick={login}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 rounded-lg text-xs font-mono text-cyan-400 font-bold transition-colors touch-target"
+                title="Cloud Sync Login"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>SYNC</span>
+              </button>
             )}
           </div>
+        </header>
+
+        {/* Mobile View Title Ribbon */}
+        <div className="lg:hidden px-4 py-2 bg-[#121212] border-b border-[#262626] flex items-center justify-between">
+          <div className="min-w-0">
+            <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider truncate">
+              {currentTitleInfo.title}
+            </h2>
+            <p className="text-[9px] font-mono text-[#888] truncate">{currentTitleInfo.subtitle}</p>
+          </div>
+          <button
+            onClick={() => setIsThemeModalOpen(true)}
+            className="p-1.5 bg-[#181818] border border-cyan-500/30 rounded text-cyan-400 text-[10px] font-mono flex items-center gap-1"
+          >
+            <Palette className="w-3 h-3" /> THEME
+          </button>
         </div>
 
         {/* Mobile Full Navigation Overlay Drawer */}
@@ -352,51 +375,136 @@ export function Layout({ children }: { children: React.ReactNode }) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-[#0A0A0A] border-b border-[#262626] pb-6 mb-6 space-y-4 overflow-hidden"
+              className="md:hidden bg-[#0A0A0A] border-b border-[#262626] p-4 space-y-4 shadow-2xl z-40 overflow-hidden"
             >
-              <div className="grid grid-cols-2 gap-2 p-2">
-                {navCategories.flatMap(cat => cat.items).map((item: any) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setView(item.id as any);
-                      setIsMobileDrawerOpen(false);
-                    }}
-                    className={cn(
-                      "flex items-center space-x-2 p-2.5 rounded-sm border text-left transition-all",
-                      currentView === item.id
-                        ? "bg-[#1A1A1A] border-cyan-500/50 text-cyan-400 font-bold"
-                        : "bg-[#141414] border-[#262626] text-[#A3A3A3] hover:text-white"
-                    )}
-                  >
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-[11px] font-mono uppercase tracking-wider truncate">{item.label}</span>
-                  </button>
-                ))}
+              {/* Drawer Search Filter */}
+              <div className="flex items-center px-3 py-2 bg-[#121212] border border-[#262626] rounded-lg">
+                <Search className="w-4 h-4 text-[#888] mr-2 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  placeholder="Filter channels..."
+                  className="w-full bg-transparent text-white font-mono text-xs focus:outline-none placeholder:text-[#555]"
+                />
+                {mobileSearchQuery && (
+                  <button onClick={() => setMobileSearchQuery('')} className="text-[#888] text-xs font-mono">✕</button>
+                )}
+              </div>
+
+              {/* Categorized Grid of Modules */}
+              <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto custom-scrollbar p-1">
+                {filteredMobileItems.map((item: any) => {
+                  const isSelected = currentView === item.id;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setView(item.id as any);
+                        setIsMobileDrawerOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center space-x-2.5 p-3 rounded-lg border text-left transition-all touch-target min-w-0",
+                        isSelected
+                          ? "bg-[#181818] border-cyan-500/60 text-cyan-400 font-bold shadow-md"
+                          : "bg-[#121212] border-[#262626] text-[#A3A3A3] hover:text-white"
+                      )}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-xs font-mono uppercase tracking-wider truncate flex-1">{item.label}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-cyan-500 text-black font-bold">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="flex gap-2 pt-2 border-t border-[#262626]">
+                <button
+                  onClick={() => { setIsThemeModalOpen(true); setIsMobileDrawerOpen(false); }}
+                  className="flex-1 py-2.5 bg-cyan-950/40 border border-cyan-500/40 text-cyan-400 font-mono text-xs uppercase font-bold rounded-lg flex items-center justify-center gap-2 touch-target"
+                >
+                  <Palette className="w-4 h-4" /> THEME GALLERY
+                </button>
+                <button
+                  onClick={() => { setView('settings'); setIsMobileDrawerOpen(false); }}
+                  className="p-2.5 bg-[#121212] border border-[#262626] text-[#A3A3A3] hover:text-white rounded-lg touch-target"
+                  title="Settings"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* View Content */}
-        <motion.div
-          key={currentView}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="max-w-5xl mx-auto"
-        >
-          {children}
-        </motion.div>
-        
-        {/* Onboarding Guide Portal */}
-        <OnboardingGuide themeColor={themeColor} />
-      </main>
+        {/* View Main Content Workspace */}
+        <main className={cn(
+          "flex-1 p-3 sm:p-6 pb-24 md:pb-8 overflow-y-auto no-scrollbar relative w-full max-w-7xl mx-auto min-w-0",
+          isCloaked && "blur-sm transition-all duration-300 hover:blur-none"
+        )}>
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="w-full min-w-0"
+          >
+            {children}
+          </motion.div>
+
+          {/* Onboarding Guide Portal */}
+          <OnboardingGuide themeColor={themeColor} />
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[#262626] bg-[#0A0A0A]/95 backdrop-blur-xl z-50 flex justify-around p-1.5 shadow-2xl">
+        {mobileNavItems.map((item) => {
+          const isSelected = currentView === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id as any)}
+              className={cn(
+                "flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all duration-200 relative flex-1 min-w-0 touch-target",
+                isSelected
+                  ? "bg-[#181818] border border-cyan-500/40 text-cyan-400 shadow-md"
+                  : "text-[#777] hover:text-[#AAA]"
+              )}
+            >
+              <Icon className={cn("w-5 h-5 mb-0.5", isSelected && "animate-pulse")} />
+              <span className="text-[9px] font-mono uppercase tracking-wider text-center truncate w-full font-bold">
+                {item.label}
+              </span>
+              {item.badge !== undefined && (
+                <span className="absolute -top-1 right-1 px-1 py-0.2 text-[8px] font-mono font-black bg-cyan-500 text-black rounded-full leading-none shadow">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Command Palette Search Modal */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onOpenThemeGallery={() => setIsThemeModalOpen(true)}
+      />
 
       {/* UI Theme Samples Gallery Modal */}
-      <ThemeGalleryModal 
-        isOpen={isThemeModalOpen} 
-        onClose={() => setIsThemeModalOpen(false)} 
+      <ThemeGalleryModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
         currentThemeColor={themeColor}
         currentUiTheme={uiTheme}
       />

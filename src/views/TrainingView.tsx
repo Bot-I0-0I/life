@@ -1689,7 +1689,7 @@ export function TrainingView() {
 
       {/* Completion Summary Modal */}
       {showSummaryModal && summaryData && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
           <div className="bg-[#0A0A0A] border border-emerald-500 rounded-sm p-6 max-w-md w-full space-y-5 text-center relative">
             <div className="inline-flex p-3 bg-emerald-950/60 rounded-full border border-emerald-500">
               <Award className="w-10 h-10 text-emerald-400" />

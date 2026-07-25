@@ -119,6 +119,18 @@ export function NutritionView() {
   );
 
   const [activeSubTab, setActiveSubTab] = useState<'tracker' | 'sql_house' | 'pakistani_diets'>('tracker');
+  const [showFormulaModal, setShowFormulaModal] = useState(false);
+
+  // Advanced Formula Calculator State
+  const [calcFormula, setCalcFormula] = useState<'mifflin' | 'katch' | 'harris'>('mifflin');
+  const [calcWeightKg, setCalcWeightKg] = useState('70');
+  const [calcHeightCm, setCalcHeightCm] = useState('175');
+  const [calcAgeYrs, setCalcAgeYrs] = useState('25');
+  const [calcGenderType, setCalcGenderType] = useState<'male' | 'female'>('male');
+  const [calcBodyFatPct, setCalcBodyFatPct] = useState('15');
+  const [calcActivityLevel, setCalcActivityLevel] = useState<number>(1.375);
+  const [calcHealthGoal, setCalcHealthGoal] = useState<'cut_aggr' | 'cut_mod' | 'maint' | 'bulk_lean' | 'bulk_heavy'>('maint');
+  const [calcMacroPreset, setCalcMacroPreset] = useState<'balanced' | 'high_protein' | 'keto' | 'low_fat'>('balanced');
 
   // Manual Log Form State
   const [name, setName] = useState('');
@@ -133,32 +145,54 @@ export function NutritionView() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState<'calories' | 'protein' | 'carbs' | 'fat'>('protein');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [customSqlQuery, setCustomSqlQuery] = useState('');
+  const [selectedMealSlot, setSelectedMealSlot] = useState<'Breakfast' | 'Lunch' | 'Dinner' | 'Snack'>('Lunch');
 
-  if (!userStats || !nutritionLogs) return <div className="p-6 font-mono text-white opacity-80 uppercase">Loading Metabolism Engine...</div>;
+  if (!userStats || !nutritionLogs) return <div className="p-[#1a1a1a] p-6 font-mono text-white opacity-80 uppercase">Loading Metabolism Engine...</div>;
 
   const level = Math.floor((userStats.xp || 0) / 1000) + 1;
   const rankColor = getRank(level).color;
   const themeColor = userStats?.selectedColor || rankColor;
 
-  // Calorie & Macro calculations
-  const calcWeight = userStats.height ? 70 : 70;
-  const calcHeight = userStats.height || 175;
-  const calcAge = userStats.age || 25;
-  const calcGender = userStats.gender || 'male';
+  // Real-time BMR & TDEE Calculations using Advanced Formulas
+  const wKg = userStats.weight || parseFloat(calcWeightKg) || 70;
+  const hCm = userStats.height || parseFloat(calcHeightCm) || 175;
+  const aYrs = userStats.age || parseInt(calcAgeYrs) || 25;
+  const gType = userStats.gender || calcGenderType;
 
-  let bmr = (10 * calcWeight) + (6.25 * calcHeight) - (5 * calcAge) + (calcGender === 'female' ? -161 : 5);
-  let activityMultiplier = 1.375;
-  const tdee = bmr * activityMultiplier;
+  // Formula 1: Mifflin-St Jeor Equation
+  const bmrMifflin = (10 * wKg) + (6.25 * hCm) - (5 * aYrs) + (gType === 'female' ? -161 : 5);
 
-  let goalModifier = 0;
-  if (userStats.fitnessGoal === 'lose') goalModifier = -500;
-  else if (userStats.fitnessGoal === 'build') goalModifier = 500;
+  // Formula 2: Katch-McArdle Equation (Lean Body Mass)
+  const leanBodyMassKg = wKg * (1 - (parseFloat(calcBodyFatPct) / 100));
+  const bmrKatch = 370 + (21.6 * leanBodyMassKg);
 
-  const targetCalories = Math.round(tdee + goalModifier);
-  const targetProtein = Math.round((targetCalories * 0.30) / 4);
-  const targetCarbs = Math.round((targetCalories * 0.40) / 4);
-  const targetFat = Math.round((targetCalories * 0.30) / 9);
+  // Formula 3: Harris-Benedict Revised Equation
+  const bmrHarris = gType === 'female'
+    ? 447.593 + (9.247 * wKg) + (3.098 * hCm) - (4.330 * aYrs)
+    : 88.362 + (13.397 * wKg) + (4.799 * hCm) - (5.677 * aYrs);
+
+  let activeBmr = bmrMifflin;
+  if (calcFormula === 'katch') activeBmr = bmrKatch;
+  if (calcFormula === 'harris') activeBmr = bmrHarris;
+
+  const activeTdee = activeBmr * calcActivityLevel;
+
+  let goalCalorieModifier = 0;
+  if (calcHealthGoal === 'cut_aggr') goalCalorieModifier = -750;
+  else if (calcHealthGoal === 'cut_mod') goalCalorieModifier = -400;
+  else if (calcHealthGoal === 'bulk_lean') goalCalorieModifier = +300;
+  else if (calcHealthGoal === 'bulk_heavy') goalCalorieModifier = +600;
+
+  const targetCalories = Math.round(activeTdee + goalCalorieModifier);
+
+  let proRatio = 0.30, carbRatio = 0.40, fatRatio = 0.30;
+  if (calcMacroPreset === 'high_protein') { proRatio = 0.40; carbRatio = 0.35; fatRatio = 0.25; }
+  else if (calcMacroPreset === 'keto') { proRatio = 0.25; carbRatio = 0.05; fatRatio = 0.70; }
+  else if (calcMacroPreset === 'low_fat') { proRatio = 0.35; carbRatio = 0.50; fatRatio = 0.15; }
+
+  const targetProtein = Math.round((targetCalories * proRatio) / 4);
+  const targetCarbs = Math.round((targetCalories * carbRatio) / 4);
+  const targetFat = Math.round((targetCalories * fatRatio) / 9);
 
   const consumedCalories = nutritionLogs.filter(log => log.type === 'food').reduce((acc, log) => acc + log.calories, 0);
   const consumedProtein = nutritionLogs.filter(log => log.type === 'food').reduce((acc, log) => acc + (log.protein || 0), 0);
@@ -211,7 +245,7 @@ export function NutritionView() {
     await db.nutritionLogs.add({
       date: today,
       type: 'food',
-      name: `${item.name} (${item.portion})`,
+      name: `[${selectedMealSlot}] ${item.name} (${item.portion})`,
       calories: item.calories,
       protein: item.protein,
       carbs: item.carbs,
@@ -220,7 +254,7 @@ export function NutritionView() {
 
     await addXp(item.calories / 2 + 50);
     await logSystemEvent('NUTRITION', 'SUCCESS', `Logged from SQL Data House: ${item.name}`);
-    alert(`Logged ${item.name} (${item.calories} KCAL) to today's diet log!`);
+    alert(`✅ Logged ${item.name} (${item.calories} KCAL) into ${selectedMealSlot}!`);
   };
 
   const handleDeleteLog = async (id: number) => {
@@ -306,18 +340,29 @@ export function NutritionView() {
         <div className="space-y-8">
           {/* Caloric & Macro Budget Dashboard */}
           <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-6 relative overflow-hidden space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#262626] pb-4">
-              <div>
-                <span className="text-[10px] font-mono text-[#A3A3A3] uppercase tracking-widest">DAILY CALORIC BUDGET</span>
-                <h3 className="text-2xl font-mono text-white font-bold">{consumedCalories} / {targetCalories} KCAL</h3>
-              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#262626] pb-4">
+                <div>
+                  <span className="text-[10px] font-mono text-[#A3A3A3] uppercase tracking-widest">DAILY CALORIC BUDGET</span>
+                  <h3 className="text-2xl font-mono text-white font-bold">{consumedCalories} / {targetCalories} KCAL</h3>
+                  <div className="text-[10px] font-mono text-cyan-400 mt-0.5 flex items-center gap-1">
+                    <span>Formula: {calcFormula === 'mifflin' ? 'Mifflin-St Jeor' : calcFormula === 'katch' ? 'Katch-McArdle' : 'Harris-Benedict'}</span>
+                    <span>| BMR: {Math.round(activeBmr)} KCAL</span>
+                    <span>| TDEE: {Math.round(activeTdee)} KCAL</span>
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-4 font-mono text-xs">
-                <div className="px-3 py-1.5 bg-[#141414] border border-[#262626] rounded-sm">
-                  <span className="text-[#A3A3A3] uppercase">NET REMAINING:</span> <span className="text-emerald-400 font-bold">{Math.max(0, targetCalories - consumedCalories)} KCAL</span>
+                <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                  <button
+                    onClick={() => setShowFormulaModal(true)}
+                    className="px-3 py-1.5 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 font-bold uppercase rounded-sm flex items-center gap-1.5 transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> ADVANCED HEALTH FORMULAS
+                  </button>
+                  <div className="px-3 py-1.5 bg-[#141414] border border-[#262626] rounded-sm">
+                    <span className="text-[#A3A3A3] uppercase">NET REMAINING:</span> <span className="text-emerald-400 font-bold">{Math.max(0, targetCalories - consumedCalories)} KCAL</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
             {/* Macros Bar */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -498,14 +543,14 @@ export function NutritionView() {
           </div>
 
           {/* Controls bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="relative">
               <Search className="w-4 h-4 text-[#A3A3A3] absolute left-3 top-3" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search food name or category..."
+                placeholder="Search food name..."
                 className="w-full bg-[#141414] border border-[#262626] rounded-sm pl-9 pr-3 py-2.5 text-white font-mono text-xs focus:outline-none uppercase"
               />
             </div>
@@ -527,21 +572,32 @@ export function NutritionView() {
               <option value="SWEETS">DESSERTS & SWEETS</option>
             </select>
 
+            <select
+              value={selectedMealSlot}
+              onChange={(e) => setSelectedMealSlot(e.target.value as any)}
+              className="bg-[#141414] border border-[#262626] rounded-sm px-3 py-2.5 text-cyan-300 font-mono text-xs font-bold focus:outline-none uppercase"
+            >
+              <option value="Breakfast">TARGET: BREAKFAST</option>
+              <option value="Lunch">TARGET: LUNCH</option>
+              <option value="Dinner">TARGET: DINNER</option>
+              <option value="Snack">TARGET: SNACK</option>
+            </select>
+
             <div className="flex gap-2">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="flex-1 bg-[#141414] border border-[#262626] rounded-sm px-3 py-2.5 text-white font-mono text-xs focus:outline-none uppercase"
               >
-                <option value="protein">SORT BY PROTEIN</option>
-                <option value="calories">SORT BY CALORIES</option>
-                <option value="carbs">SORT BY CARBS</option>
-                <option value="fat">SORT BY FAT</option>
+                <option value="protein">SORT: PROTEIN</option>
+                <option value="calories">SORT: CALORIES</option>
+                <option value="carbs">SORT: CARBS</option>
+                <option value="fat">SORT: FAT</option>
               </select>
 
               <button
                 onClick={() => setSortDir(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="px-3 bg-[#141414] border border-[#262626] text-white rounded-sm font-mono text-xs"
+                className="px-3 bg-[#141414] border border-[#262626] text-white rounded-sm font-mono text-xs hover:bg-[#1A1A1A]"
               >
                 <ArrowUpDown className="w-4 h-4" />
               </button>
@@ -593,7 +649,266 @@ export function NutritionView() {
 
       {/* SUBTAB 3: PAKISTANI DIETS */}
       {activeSubTab === 'pakistani_diets' && (
-        <PakistaniFoodsSection />
+        <PakistaniFoodsSection 
+          themeColor={themeColor}
+          onLogFoodItem={async (item) => {
+            await db.nutritionLogs.add({
+              date: today,
+              type: 'food',
+              name: `${item.name} (${item.portion})`,
+              calories: item.calories,
+              protein: item.protein,
+              carbs: item.carbs,
+              fat: item.fat
+            });
+            await addXp(item.calories / 2 + 50);
+            await logSystemEvent('NUTRITION', 'SUCCESS', `Logged diet item: ${item.name}`);
+            alert(`✅ Logged ${item.name} (${item.calories} KCAL) to today's log!`);
+          }}
+          onLogDietPlan={async (plan) => {
+            for (const m of plan.meals) {
+              await db.nutritionLogs.add({
+                date: today,
+                type: 'food',
+                name: `[${plan.name}] ${m.name}`,
+                calories: m.calories,
+                protein: m.protein,
+                carbs: m.carbs,
+                fat: m.fat
+              });
+            }
+            await addXp(plan.totalCalories / 2 + 150);
+            await logSystemEvent('NUTRITION', 'SUCCESS', `Executed diet plan: ${plan.name}`);
+            alert(`🔥 Executed Full Diet Protocol: ${plan.name} (${plan.totalCalories} KCAL logged for today)!`);
+          }}
+          onLogDietMeal={async (meal) => {
+            await db.nutritionLogs.add({
+              date: today,
+              type: 'food',
+              name: `${meal.name} (${meal.time})`,
+              calories: meal.calories,
+              protein: meal.protein,
+              carbs: meal.carbs,
+              fat: meal.fat
+            });
+            await addXp(meal.calories / 2 + 30);
+            await logSystemEvent('NUTRITION', 'SUCCESS', `Logged plan meal: ${meal.name}`);
+            alert(`✅ Logged ${meal.name} (${meal.calories} KCAL) to today's log!`);
+          }}
+        />
+      )}
+
+      {/* ADVANCED HEALTH INTAKE FORMULA MODAL */}
+      {showFormulaModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm max-w-2xl w-full p-6 shadow-2xl relative my-8 space-y-6">
+            <div className="flex justify-between items-center border-b border-[#262626] pb-4">
+              <div>
+                <h3 className="text-lg font-mono text-white font-bold uppercase flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-cyan-400" />
+                  ADVANCED METABOLIC INTAKE CALCULATOR
+                </h3>
+                <p className="text-[10px] font-mono text-[#A3A3A3] uppercase">
+                  Calculate precise clinical energy expenditure based on biometrics & health goals.
+                </p>
+              </div>
+              <button onClick={() => setShowFormulaModal(false)} className="text-[#A3A3A3] hover:text-white font-mono text-sm">✕</button>
+            </div>
+
+            {/* Formula Selector */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-mono text-cyan-400 font-bold uppercase">SELECT METABOLIC FORMULA ENGINE:</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  onClick={() => setCalcFormula('mifflin')}
+                  className={cn(
+                    "p-3 rounded-sm border font-mono text-xs text-left transition-all",
+                    calcFormula === 'mifflin' ? "bg-cyan-950/50 border-cyan-500 text-white" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  <div className="font-bold">Mifflin-St Jeor</div>
+                  <div className="text-[9px] text-[#A3A3A3] mt-1">Clinical standard. Highest precision for general population.</div>
+                </button>
+                <button
+                  onClick={() => setCalcFormula('katch')}
+                  className={cn(
+                    "p-3 rounded-sm border font-mono text-xs text-left transition-all",
+                    calcFormula === 'katch' ? "bg-cyan-950/50 border-cyan-500 text-white" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  <div className="font-bold">Katch-McArdle</div>
+                  <div className="text-[9px] text-[#A3A3A3] mt-1">Uses Lean Body Mass (LBM). Ideal for athletes & low fat %.</div>
+                </button>
+                <button
+                  onClick={() => setCalcFormula('harris')}
+                  className={cn(
+                    "p-3 rounded-sm border font-mono text-xs text-left transition-all",
+                    calcFormula === 'harris' ? "bg-cyan-950/50 border-cyan-500 text-white" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  <div className="font-bold">Harris-Benedict</div>
+                  <div className="text-[9px] text-[#A3A3A3] mt-1">Revised classic formula. Great for high activity levels.</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Input Inputs Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[9px] font-mono text-[#A3A3A3] mb-1 uppercase">WEIGHT (KG)</label>
+                <input
+                  type="number"
+                  value={calcWeightKg}
+                  onChange={(e) => setCalcWeightKg(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-3 py-2 text-white font-mono text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-[#A3A3A3] mb-1 uppercase">HEIGHT (CM)</label>
+                <input
+                  type="number"
+                  value={calcHeightCm}
+                  onChange={(e) => setCalcHeightCm(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-3 py-2 text-white font-mono text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-[#A3A3A3] mb-1 uppercase">AGE (YEARS)</label>
+                <input
+                  type="number"
+                  value={calcAgeYrs}
+                  onChange={(e) => setCalcAgeYrs(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-3 py-2 text-white font-mono text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-[#A3A3A3] mb-1 uppercase">BODY FAT %</label>
+                <input
+                  type="number"
+                  value={calcBodyFatPct}
+                  onChange={(e) => setCalcBodyFatPct(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-3 py-2 text-white font-mono text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Activity Level & Goal */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 uppercase">PHYSICAL ACTIVITY MULTIPLIER:</label>
+                <select
+                  value={calcActivityLevel}
+                  onChange={(e) => setCalcActivityLevel(parseFloat(e.target.value))}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-3 py-2.5 text-white font-mono text-xs focus:outline-none uppercase"
+                >
+                  <option value={1.2}>1.20 - Sedentary (Desk job, minimal exercise)</option>
+                  <option value={1.375}>1.375 - Lightly Active (1-3 workouts / week)</option>
+                  <option value={1.55}>1.55 - Moderately Active (3-5 workouts / week)</option>
+                  <option value={1.725}>1.725 - Very Active (6-7 heavy workouts / week)</option>
+                  <option value={1.9}>1.90 - Athlete / Heavy Labor (2x daily training)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 uppercase">HEALTH & FITNESS GOAL:</label>
+                <select
+                  value={calcHealthGoal}
+                  onChange={(e) => setCalcHealthGoal(e.target.value as any)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-3 py-2.5 text-white font-mono text-xs focus:outline-none uppercase"
+                >
+                  <option value="cut_aggr">Aggressive Fat Shred (-750 kcal)</option>
+                  <option value="cut_mod">Moderate Deficit (-400 kcal)</option>
+                  <option value="maint">Maintenance & Recomp (+0 kcal)</option>
+                  <option value="bulk_lean">Lean Muscle Mass (+300 kcal)</option>
+                  <option value="bulk_heavy">Heavy Hypertrophy Bulk (+600 kcal)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Macro Distribution Ratio */}
+            <div>
+              <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 uppercase">MACRONUTRIENT RATIO SPLIT:</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  onClick={() => setCalcMacroPreset('balanced')}
+                  className={cn(
+                    "p-2 rounded-sm border font-mono text-[10px] text-center uppercase transition-all",
+                    calcMacroPreset === 'balanced' ? "bg-cyan-950/60 border-cyan-500 text-white font-bold" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  Balanced (30/40/30)
+                </button>
+                <button
+                  onClick={() => setCalcMacroPreset('high_protein')}
+                  className={cn(
+                    "p-2 rounded-sm border font-mono text-[10px] text-center uppercase transition-all",
+                    calcMacroPreset === 'high_protein' ? "bg-cyan-950/60 border-cyan-500 text-white font-bold" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  High Protein (40/35/25)
+                </button>
+                <button
+                  onClick={() => setCalcMacroPreset('keto')}
+                  className={cn(
+                    "p-2 rounded-sm border font-mono text-[10px] text-center uppercase transition-all",
+                    calcMacroPreset === 'keto' ? "bg-cyan-950/60 border-cyan-500 text-white font-bold" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  Keto / Low Carb (25/5/70)
+                </button>
+                <button
+                  onClick={() => setCalcMacroPreset('low_fat')}
+                  className={cn(
+                    "p-2 rounded-sm border font-mono text-[10px] text-center uppercase transition-all",
+                    calcMacroPreset === 'low_fat' ? "bg-cyan-950/60 border-cyan-500 text-white font-bold" : "bg-[#141414] border-[#262626] text-[#A3A3A3]"
+                  )}
+                >
+                  Low Fat (35/50/15)
+                </button>
+              </div>
+            </div>
+
+            {/* Calculated Output Summary Card */}
+            <div className="p-4 bg-[#141414] border border-cyan-900/50 rounded-sm space-y-3">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-[#A3A3A3] uppercase">CALCULATED BMR:</span>
+                <span className="text-white font-bold">{Math.round(activeBmr)} KCAL/DAY</span>
+              </div>
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-[#A3A3A3] uppercase">ESTIMATED TDEE:</span>
+                <span className="text-cyan-400 font-bold">{Math.round(activeTdee)} KCAL/DAY</span>
+              </div>
+              <div className="flex justify-between items-center text-sm font-mono border-t border-[#262626] pt-2">
+                <span className="text-white font-bold uppercase">TARGET DAILY INTAKE BUDGET:</span>
+                <span className="text-emerald-400 font-bold">{targetCalories} KCAL</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[10px] font-mono text-center pt-2">
+                <div className="p-2 bg-[#0A0A0A] border border-[#262626] rounded-sm text-red-400">
+                  PROTEIN: <span className="font-bold text-white">{targetProtein}g</span>
+                </div>
+                <div className="p-2 bg-[#0A0A0A] border border-[#262626] rounded-sm text-amber-400">
+                  CARBS: <span className="font-bold text-white">{targetCarbs}g</span>
+                </div>
+                <div className="p-2 bg-[#0A0A0A] border border-[#262626] rounded-sm text-cyan-400">
+                  FAT: <span className="font-bold text-white">{targetFat}g</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowFormulaModal(false);
+                alert(`✅ Applied ${calcFormula.toUpperCase()} formula targets: ${targetCalories} KCAL (${targetProtein}g P, ${targetCarbs}g C, ${targetFat}g F)`);
+              }}
+              className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-black font-mono text-xs font-bold uppercase rounded-sm transition-colors"
+            >
+              APPLY TARGETS TO MY METABOLISM ENGINE
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

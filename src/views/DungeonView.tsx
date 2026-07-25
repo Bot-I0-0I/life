@@ -99,7 +99,7 @@ export function DungeonView() {
     const healthPercent = (dungeon.currentHealth / dungeon.totalHealth) * 100;
 
     return (
-      <div className="fixed inset-0 bg-[#050505] z-[100] flex flex-col items-center justify-center p-8">
+      <div className="fixed inset-0 bg-[#050505] z-[99999] flex flex-col items-center justify-center p-8">
         <div className="absolute top-8 right-8">
           <button 
             onClick={() => setActiveDungeonId(null)}

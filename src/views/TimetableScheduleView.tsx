@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, addXp, TimetableBlock, logSystemEvent } from '../db/db';
+import { db, addXp, updateStreak, TimetableBlock, logSystemEvent } from '../db/db';
 import { cn, getRank } from '../lib/utils';
 import { 
   Clock, Plus, Trash2, CheckCircle, Circle, Sparkles, Calendar, 
   Gamepad2, Palette, Dumbbell, BookOpen, Briefcase, Heart, AlertCircle,
-  ChevronRight, Tag, Zap, Check, Edit3, ShieldAlert
+  ChevronRight, Tag, Zap, Check, Edit3, ShieldAlert, Flame
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -287,6 +287,58 @@ export function TimetableScheduleView() {
         </div>
       </div>
 
+      {/* Everyday Execution Streak Card */}
+      <div className="bg-[#0A0A0A] border border-amber-500/40 p-4 sm:p-5 rounded-sm relative overflow-hidden bg-gradient-to-r from-amber-950/20 via-[#0A0A0A] to-[#0A0A0A] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-amber-950/50 border border-amber-500/50 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <Flame className="w-7 h-7 text-amber-400 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-amber-400 tracking-widest uppercase">
+                EVERYDAY EXECUTION STREAK
+              </span>
+              <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 text-[9px] font-mono font-bold rounded">
+                ACTIVE
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <span className="text-2xl sm:text-3xl font-mono font-black text-white">
+                {userStats?.currentStreak || 0}
+              </span>
+              <span className="text-xs font-mono text-[#A3A3A3] uppercase font-bold">DAYS IN A ROW</span>
+              <span className="text-[10px] font-mono text-[#666] ml-2">
+                (BEST: {userStats?.longestStreak || 0} DAYS)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={async () => {
+            const today = new Date().toISOString().split('T')[0];
+            if (userStats?.lastCheckInDate === today) {
+              toast.info("🔥 Already checked in today! Streak extended.");
+              return;
+            }
+            await addXp(50, 'WIL');
+            await updateStreak();
+            toast.success("🔥 DAILY CHECK-IN RECORDED! +50 XP & Streak Extended!");
+          }}
+          className={cn(
+            "w-full sm:w-auto px-5 py-2.5 rounded-sm font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md touch-target",
+            userStats?.lastCheckInDate === new Date().toISOString().split('T')[0]
+              ? "bg-amber-950/40 text-amber-400 border border-amber-500/40 cursor-default"
+              : "bg-amber-500 hover:bg-amber-400 text-black font-black active:scale-95"
+          )}
+        >
+          <Flame className="w-4 h-4" />
+          {userStats?.lastCheckInDate === new Date().toISOString().split('T')[0]
+            ? 'CHECKED IN TODAY ✓'
+            : 'CHECK IN FOR TODAY (+50 XP)'}
+        </button>
+      </div>
+
       {/* 24-Hour Visual Timeline Progress Gauge */}
       <div className="bg-[#0A0A0A] border border-[#262626] p-4 rounded-sm space-y-3">
         <div className="flex items-center justify-between text-xs font-mono">
@@ -372,10 +424,10 @@ export function TimetableScheduleView() {
         </div>
       </div>
 
-      {/* Weekday Selector & Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-[#0A0A0A] border border-[#262626] p-3 rounded-sm">
+      {/* Weekday Selector, Actions & Filters */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-[#0A0A0A] border border-[#262626] p-3 rounded-sm">
         {/* Days of Week */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0">
           {WEEKDAYS.map(day => {
             const isToday = new Date().getDay() === day.value;
             const isSelected = selectedDay === day.value;
@@ -384,7 +436,7 @@ export function TimetableScheduleView() {
                 key={day.value}
                 onClick={() => setSelectedDay(day.value)}
                 className={cn(
-                  "px-3 py-1.5 font-mono text-xs rounded-sm transition-all flex items-center gap-1 uppercase tracking-wider font-bold",
+                  "px-3 py-1.5 font-mono text-xs rounded-sm transition-all flex items-center gap-1 uppercase tracking-wider font-bold touch-target",
                   isSelected 
                     ? "bg-[#222] text-white border-b-2" 
                     : "bg-[#121212] text-[#888] hover:text-white hover:bg-[#1a1a1a]"
@@ -398,23 +450,54 @@ export function TimetableScheduleView() {
           })}
         </div>
 
-        {/* Category Filter */}
-        <div className="flex items-center gap-2">
-          <Tag className="w-3.5 h-3.5 text-[#888]" />
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="bg-[#141414] border border-[#262626] text-xs font-mono text-[#CCC] px-3 py-1.5 rounded-sm focus:outline-none focus:border-[#555] uppercase"
-          >
-            <option value="all">ALL CATEGORIES</option>
-            <option value="hobby">🎨 HOBBY & CRAFTS</option>
-            <option value="workout">🏋️ WORKOUT</option>
-            <option value="study">📚 STUDY & SKILL</option>
-            <option value="work">💼 WORK</option>
-            <option value="gaming">🎮 GAMING</option>
-            <option value="rest">🧘 REST & WIND DOWN</option>
-            <option value="personal">👤 PERSONAL</option>
-          </select>
+        {/* Quick Day Actions & Category Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          {filteredBlocks.length > 0 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={async () => {
+                  for (const b of filteredBlocks) {
+                    if (b.id) await db.timetable.update(b.id, { completedToday: true });
+                  }
+                  toast.success(`marked all ${filteredBlocks.length} blocks completed!`);
+                }}
+                className="px-2.5 py-1.5 bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-400 text-[10px] font-mono font-bold uppercase rounded-sm transition-all"
+                title="Mark all blocks for today completed"
+              >
+                ✓ COMPLETE ALL
+              </button>
+              <button
+                onClick={async () => {
+                  for (const b of filteredBlocks) {
+                    if (b.id) await db.timetable.update(b.id, { completedToday: false });
+                  }
+                  toast.info("Reset today's execution progress");
+                }}
+                className="px-2.5 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#262626] text-[#888] hover:text-white text-[10px] font-mono font-bold uppercase rounded-sm transition-all"
+                title="Reset completion state for today"
+              >
+                ↺ RESET
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Tag className="w-3.5 h-3.5 text-[#888]" />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="bg-[#141414] border border-[#262626] text-xs font-mono text-[#CCC] px-3 py-1.5 rounded-sm focus:outline-none focus:border-[#555] uppercase"
+            >
+              <option value="all">ALL CATEGORIES</option>
+              <option value="hobby">🎨 HOBBY & CRAFTS</option>
+              <option value="workout">🏋️ WORKOUT</option>
+              <option value="study">📚 STUDY & SKILL</option>
+              <option value="work">💼 WORK</option>
+              <option value="gaming">🎮 GAMING</option>
+              <option value="rest">🧘 REST & WIND DOWN</option>
+              <option value="personal">👤 PERSONAL</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -536,7 +619,7 @@ export function TimetableScheduleView() {
 
       {/* Focus Timer Session Modal */}
       {focusBlock && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0A0A] border border-cyan-500/50 rounded-lg p-6 max-w-md w-full text-center space-y-6 relative shadow-2xl">
             <div className="flex justify-between items-center border-b border-[#262626] pb-3">
               <span className="text-xs font-mono text-cyan-400 uppercase font-bold tracking-widest flex items-center gap-1.5">
@@ -583,7 +666,7 @@ export function TimetableScheduleView() {
 
       {/* Add / Edit Time Block Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-6 max-w-lg w-full space-y-5 relative shadow-2xl">
             <div className="flex justify-between items-center border-b border-[#262626] pb-3">
               <h3 className="text-lg font-mono text-white font-bold uppercase tracking-wider flex items-center gap-2">
