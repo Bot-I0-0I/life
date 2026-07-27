@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, addXp, logSystemEvent } from '../db/db';
-import { Flame, Utensils, Plus, Trash2, Target, Droplets, Beef, Wheat, Save, Download, Sparkles, Database, Search, Filter, ArrowUpDown, FileText, CheckCircle } from 'lucide-react';
+import { Flame, Utensils, Plus, Trash2, Target, Droplets, Beef, Wheat, Save, Sparkles, Database, Search, Filter, ArrowUpDown, FileText, CheckCircle, Zap } from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
 import { format, subDays, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -141,6 +141,9 @@ export function NutritionView() {
   const [fat, setFat] = useState('');
   const [waterAmount, setWaterAmount] = useState('');
 
+  // Quick Inline Database Picker inside Diet Tracker
+  const [quickDbSearch, setQuickDbSearch] = useState('');
+
   // SQL Data House / Spreadsheet State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('ALL');
@@ -274,17 +277,6 @@ export function NutritionView() {
     return sortDir === 'desc' ? valB - valA : valA - valB;
   });
 
-  const handleExportCsv = () => {
-    const headers = "ID,Name,Category,Calories,Protein_g,Carbs_g,Fat_g,Portion\n";
-    const rows = filteredFoodData.map(f => `${f.id},"${f.name}",${f.category},${f.calories},${f.protein},${f.carbs},${f.fat},"${f.portion}"`).join("\n");
-    const blob = new Blob([headers + rows], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'food_spreadsheet_database.csv';
-    a.click();
-  };
-
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
@@ -293,10 +285,10 @@ export function NutritionView() {
           <div>
             <h2 className="text-3xl font-mono font-bold tracking-tight text-white flex items-center uppercase" style={{ color: themeColor }}>
               <Utensils className="w-8 h-8 mr-3" />
-              METABOLISM & DIETARY DATA HOUSE
+              NUTRITION & DIET CENTER
             </h2>
             <p className="text-[#A3A3A3] text-sm mt-1 font-mono uppercase tracking-widest">
-              Manage caloric budget, macro balances, and access the SQL Spreadsheet Food Repository.
+              Track daily meals, monitor macros, and log directly from our preset food database.
             </p>
           </div>
 
@@ -304,11 +296,12 @@ export function NutritionView() {
             <button
               onClick={() => setActiveSubTab('tracker')}
               className={cn(
-                "px-3 py-2 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider rounded-sm transition-all flex items-center justify-center w-full sm:w-auto",
+                "px-3 py-2 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider rounded-sm transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto",
                 activeSubTab === 'tracker' ? "bg-[#141414] text-white" : "text-[#A3A3A3] hover:text-white"
               )}
               style={activeSubTab === 'tracker' ? { color: themeColor } : {}}
             >
+              <Zap className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
               <span className="truncate">DIET TRACKER</span>
             </button>
             <button
@@ -320,7 +313,7 @@ export function NutritionView() {
               style={activeSubTab === 'sql_house' ? { color: themeColor } : {}}
             >
               <Database className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-              <span className="truncate">SQL DATA SPREADSHEET</span>
+              <span className="truncate">FOOD DATABASE</span>
             </button>
             <button
               onClick={() => setActiveSubTab('pakistani_diets')}
@@ -402,7 +395,79 @@ export function NutritionView() {
           {/* Form & Logged List */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <form onSubmit={handleLogManualFood} className="bg-[#0A0A0A] border border-[#262626] rounded-sm p-6 space-y-4">
-              <h3 className="text-lg font-mono text-white font-bold uppercase tracking-wider border-b border-[#262626] pb-3">LOG MEAL INTAKE</h3>
+              <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+                <h3 className="text-lg font-mono text-white font-bold uppercase tracking-wider">LOG MEAL INTAKE</h3>
+                <span className="text-[10px] font-mono text-cyan-400 flex items-center gap-1"><Database className="w-3 h-3" /> PRESET DB ENABLED</span>
+              </div>
+
+              {/* Quick DB Picker */}
+              <div className="space-y-2 bg-[#141414] p-3 rounded-sm border border-[#262626]">
+                <label className="block text-[10px] font-mono text-cyan-400 font-bold uppercase flex items-center gap-1">
+                  <Search className="w-3 h-3" /> QUICK SELECT FROM FOOD DATABASE
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={quickDbSearch}
+                    onChange={(e) => setQuickDbSearch(e.target.value)}
+                    placeholder="Search database (e.g. Biryani, Omelette, Tikka)..."
+                    className="w-full bg-[#0A0A0A] border border-[#262626] rounded-sm px-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                {quickDbSearch.trim().length > 0 && (
+                  <div className="max-h-40 overflow-y-auto space-y-1 mt-2 border-t border-[#262626] pt-2">
+                    {EXPANDED_SQL_FOOD_DATABASE.filter(f => f.name.toLowerCase().includes(quickDbSearch.toLowerCase()) || f.category.toLowerCase().includes(quickDbSearch.toLowerCase())).slice(0, 5).map(f => (
+                      <div
+                        key={f.id}
+                        onClick={() => {
+                          setName(f.name);
+                          setCalories(f.calories.toString());
+                          setProtein(f.protein.toString());
+                          setCarbs(f.carbs.toString());
+                          setFat(f.fat.toString());
+                          setQuickDbSearch('');
+                          toast.success(`Selected ${f.name}! Values auto-filled.`);
+                        }}
+                        className="p-2 bg-[#0A0A0A] hover:bg-[#1f1f1f] border border-[#262626] rounded-sm cursor-pointer flex justify-between items-center text-xs font-mono transition-colors"
+                      >
+                        <div>
+                          <span className="text-white font-bold">{f.name}</span>
+                          <span className="text-[10px] text-[#A3A3A3] ml-2">({f.portion})</span>
+                        </div>
+                        <span className="text-amber-400 font-bold">{f.calories} KCAL</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Popular Quick Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span className="text-[9px] font-mono text-[#A3A3A3] self-center mr-1">POPULAR:</span>
+                  {[
+                    { n: 'Chicken Biryani', c: 550, p: 32, carb: 68, f: 16 },
+                    { n: 'Omelette (2 Eggs)', c: 220, p: 14, carb: 2, f: 18 },
+                    { n: 'Grilled Chicken', c: 280, p: 48, carb: 0, f: 8 },
+                    { n: 'Roti (Whole Wheat)', c: 120, p: 3, carb: 24, f: 1 }
+                  ].map(chip => (
+                    <button
+                      key={chip.n}
+                      type="button"
+                      onClick={() => {
+                        setName(chip.n);
+                        setCalories(chip.c.toString());
+                        setProtein(chip.p.toString());
+                        setCarbs(chip.carb.toString());
+                        setFat(chip.f.toString());
+                        toast.success(`Selected ${chip.n}!`);
+                      }}
+                      className="px-2 py-0.5 bg-[#0A0A0A] border border-[#262626] hover:border-cyan-500/50 rounded-sm text-[10px] font-mono text-cyan-300 hover:text-white transition-all"
+                    >
+                      + {chip.n}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div>
                 <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 uppercase">MEAL / FOOD ITEM</label>
@@ -528,19 +593,12 @@ export function NutritionView() {
             <div>
               <h3 className="text-lg font-mono text-white font-bold uppercase flex items-center gap-2">
                 <Database className="w-5 h-5 text-cyan-400" />
-                SQL SPREADSHEET FOOD DATA HOUSE ({filteredFoodData.length} RECORDS)
+                FOOD DATABASE REPOSITORY ({filteredFoodData.length} ITEMS)
               </h3>
               <p className="text-[10px] font-mono text-[#A3A3A3] uppercase mt-1">
-                Filter, sort, and log directly from our extensive structured food repository.
+                Filter, sort, and log directly from our extensive food database into your daily diet tracker.
               </p>
             </div>
-
-            <button
-              onClick={handleExportCsv}
-              className="px-4 py-2 bg-[#141414] border border-[#262626] hover:bg-[#1A1A1A] text-white font-mono text-xs font-bold uppercase rounded-sm flex items-center gap-2"
-            >
-              <Download className="w-4 h-4 text-cyan-400" /> EXPORT TO CSV
-            </button>
           </div>
 
           {/* Controls bar */}
