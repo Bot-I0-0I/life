@@ -2,17 +2,13 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { db as localDb } from './db/db';
 import { db as cloudDb } from './firebase';
-import { collection, doc, getDoc, getDocs, setDoc, writeBatch, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, writeBatch, query, where } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { getRank } from './lib/utils';
-import { useLiveQuery } from 'dexie-react-hooks';
 
 export function useCloudSync() {
   const { user } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-
-  const localStats = useLiveQuery(() => localDb.userStats.get(1));
 
   useEffect(() => {
     if (!user) return;
@@ -23,25 +19,22 @@ export function useCloudSync() {
         const localStats = await localDb.userStats.get(1);
         const isLocalOwnedByUser = localStats && localStats.uid === user.uid;
 
-        // 1. Check if cloud has data
+        // Check if cloud has data
         const userStatsRef = doc(cloudDb, 'userStats', user.uid);
         const userStatsSnap = await getDoc(userStatsRef);
 
         if (!isLocalOwnedByUser) {
           const wasReset = localStorage.getItem('system_reset_pending');
           if (wasReset) {
-             await clearCloudData(user.uid);
-             localStorage.removeItem('system_reset_pending');
-             // Dexie's 'populate' will run automatically when localDb is first accessed.
-             // We wait for it to be ready.
-             try {
-               await localDb.open();
-               // Wait a brief moment to ensure populate logic finishes
-               await new Promise(resolve => setTimeout(resolve, 500));
-               await forceSync();
-             } catch (e) {
-               console.error("Delayed sync after reset failed:", e);
-             }
+            await clearCloudData(user.uid);
+            localStorage.removeItem('system_reset_pending');
+            try {
+              await localDb.open();
+              await new Promise(resolve => setTimeout(resolve, 500));
+              await forceSync();
+            } catch (e) {
+              console.error("Delayed sync after reset failed:", e);
+            }
           } else if (userStatsSnap.exists()) {
             // New device or account switch: pull from cloud
             await pullFromCloud(user.uid);
@@ -50,13 +43,14 @@ export function useCloudSync() {
             await pushToCloud(user.uid);
           }
         } else {
-          // Page refresh: push local data to cloud to ensure backup
+          // Page refresh / normal session: push local data to cloud backup
           await pushToCloud(user.uid);
         }
         setLastSync(new Date());
       } catch (error) {
         console.error("Sync error:", error);
-        toast.error("Failed to sync with cloud");
+        // Soft error notification
+        toast.error("Cloud sync notice: local offline data preserved.");
       } finally {
         setIsSyncing(false);
       }
@@ -65,15 +59,26 @@ export function useCloudSync() {
     syncData();
   }, [user]);
 
-  const cleanData = (obj: any) => {
-    const newObj = { ...obj };
-    delete newObj.id;
-    Object.keys(newObj).forEach(key => {
-      if (newObj[key] === undefined || newObj[key] === null || Number.isNaN(newObj[key])) {
-        delete newObj[key];
+  // Recursively sanitize objects for Firestore storage
+  const cleanData = (obj: any): any => {
+    if (obj === null || obj === undefined) return null;
+    if (typeof obj !== 'object') {
+      if (typeof obj === 'number' && Number.isNaN(obj)) return null;
+      return obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(item => cleanData(item)).filter(item => item !== undefined);
+    }
+    const cleaned: Record<string, any> = {};
+    Object.keys(obj).forEach(key => {
+      if (key === 'id') return; // Do not push Dexie auto-increment ID into body
+      const val = obj[key];
+      if (val === undefined || val === null || (typeof val === 'number' && Number.isNaN(val))) {
+        return;
       }
+      cleaned[key] = cleanData(val);
     });
-    return newObj;
+    return cleaned;
   };
 
   const pushToCloud = async (uid: string) => {
@@ -83,7 +88,7 @@ export function useCloudSync() {
       let opCount = 0;
 
       const addToBatch = (ref: any, data: any) => {
-        currentBatch.set(ref, data);
+        currentBatch.set(ref, data, { merge: true });
         opCount++;
         if (opCount >= 400) {
           chunks.push(currentBatch.commit());
@@ -92,157 +97,121 @@ export function useCloudSync() {
         }
       };
 
-      // User Stats
+      // 1. User Stats
       const localStats = await localDb.userStats.get(1);
       if (localStats) {
         const statsRef = doc(cloudDb, 'userStats', uid);
         const cleanedStats = cleanData({ ...localStats, uid });
-        // Explicitly remove legacy fields that might still be in IndexedDB
-        delete cleanedStats.penaltyActive;
-        delete cleanedStats.friends;
-        delete cleanedStats.publicProfile;
-        delete cleanedStats.friendRequests;
         addToBatch(statsRef, cleanedStats);
       }
 
-      // Quests
-      const quests = await localDb.quests.toArray();
-      quests.forEach(q => {
-        const ref = doc(cloudDb, 'quests', `${uid}_${q.id}`);
-        addToBatch(ref, cleanData({ ...q, uid }));
-      });
+      // Collections to sync
+      const collectionsToSync: Array<{ name: string; table: any }> = [
+        { name: 'quests', table: localDb.quests },
+        { name: 'dungeons', table: localDb.dungeons },
+        { name: 'inventory', table: localDb.inventory },
+        { name: 'shopItems', table: localDb.shopItems },
+        { name: 'vesselLogs', table: localDb.vesselLogs },
+        { name: 'weeklyReviews', table: localDb.weeklyReviews },
+        { name: 'tasks', table: localDb.tasks },
+        { name: 'ledger', table: localDb.ledger },
+        { name: 'nutritionLogs', table: localDb.nutritionLogs },
+        { name: 'tacticalLogs', table: localDb.tacticalLogs },
+        { name: 'missionLogs', table: localDb.missionLogs },
+        { name: 'timetable', table: localDb.timetable },
+        { name: 'badHabits', table: localDb.badHabits },
+        { name: 'habitUrgeLogs', table: localDb.habitUrgeLogs },
+        { name: 'systemLogs', table: localDb.systemLogs },
+        { name: 'foodTemplates', table: localDb.foodTemplates },
+        { name: 'questTemplates', table: localDb.questTemplates },
+      ];
 
-      // Dungeons
-      const dungeons = await localDb.dungeons.toArray();
-      dungeons.forEach(d => {
-        const ref = doc(cloudDb, 'dungeons', `${uid}_${d.id}`);
-        addToBatch(ref, cleanData({ ...d, uid }));
-      });
-
-      // Inventory
-      const inventory = await localDb.inventory.toArray();
-      inventory.forEach(i => {
-        const ref = doc(cloudDb, 'inventory', `${uid}_${i.id}`);
-        addToBatch(ref, cleanData({ ...i, uid }));
-      });
-
-      // Shop Items
-      const shopItems = await localDb.shopItems.toArray();
-      shopItems.forEach(s => {
-        const ref = doc(cloudDb, 'shopItems', `${uid}_${s.id}`);
-        addToBatch(ref, cleanData({ ...s, uid }));
-      });
-
-      // Vessel Logs
-      const vesselLogs = await localDb.vesselLogs.toArray();
-      vesselLogs.forEach(v => {
-        const ref = doc(cloudDb, 'vesselLogs', `${uid}_${v.id}`);
-        addToBatch(ref, cleanData({ ...v, uid }));
-      });
-
-      // Weekly Reviews
-      const weeklyReviews = await localDb.weeklyReviews.toArray();
-      weeklyReviews.forEach(w => {
-        const ref = doc(cloudDb, 'weeklyReviews', `${uid}_${w.id}`);
-        addToBatch(ref, cleanData({ ...w, uid }));
-      });
-
-      // Tasks
-      const tasks = await localDb.tasks.toArray();
-      tasks.forEach(t => {
-        const ref = doc(cloudDb, 'tasks', `${uid}_${t.id}`);
-        addToBatch(ref, cleanData({ ...t, uid }));
-      });
-
-      // Ledger
-      const ledger = await localDb.ledger.toArray();
-      ledger.forEach(l => {
-        const ref = doc(cloudDb, 'ledger', `${uid}_${l.id}`);
-        addToBatch(ref, cleanData({ ...l, uid }));
-      });
-
-      // Nutrition Logs
-      const nutritionLogs = await localDb.nutritionLogs.toArray();
-      nutritionLogs.forEach(n => {
-        const ref = doc(cloudDb, 'nutritionLogs', `${uid}_${n.id}`);
-        addToBatch(ref, cleanData({ ...n, uid }));
-      });
-
-      // Tactical Logs
-      const tacticalLogs = await localDb.tacticalLogs.toArray();
-      tacticalLogs.forEach(t => {
-        const ref = doc(cloudDb, 'tacticalLogs', `${uid}_${t.id}`);
-        addToBatch(ref, cleanData({ ...t, uid }));
-      });
-
-      // Mission Logs
-      const missionLogs = await localDb.missionLogs.toArray();
-      missionLogs.forEach(m => {
-        const ref = doc(cloudDb, 'missionLogs', `${uid}_${m.id}`);
-        addToBatch(ref, cleanData({ ...m, uid }));
-      });
+      for (const col of collectionsToSync) {
+        try {
+          const records = await col.table.toArray();
+          records.forEach((rec: any) => {
+            const docKey = `${uid}_${rec.id ?? Math.random().toString(36).substr(2, 9)}`;
+            const ref = doc(cloudDb, col.name, docKey);
+            addToBatch(ref, cleanData({ ...rec, uid }));
+          });
+        } catch (e) {
+          console.warn(`Error reading local table ${col.name} for sync:`, e);
+        }
+      }
 
       if (opCount > 0) {
         chunks.push(currentBatch.commit());
       }
 
       await Promise.all(chunks);
-      toast.success("Data pushed to cloud");
+      console.log("Cloud sync push complete.");
     } catch (error) {
-      console.error("Push error:", error);
+      console.error("Push to cloud failed:", error);
       throw error;
     }
   };
 
   const pullFromCloud = async (uid: string) => {
     try {
-      // User Stats
+      // 1. User Stats
       const statsSnap = await getDoc(doc(cloudDb, 'userStats', uid));
       if (statsSnap.exists()) {
         const data = statsSnap.data();
-        const { uid: _, penaltyActive, ...localData } = data;
+        const { uid: _, ...localData } = data;
         await localDb.userStats.put({ ...localData, id: 1, uid } as any);
       }
 
-      // Helper to fetch and sync collections
-      const syncCollection = async (collectionName: string, localTable: any) => {
-        const q = query(collection(cloudDb, collectionName), where("uid", "==", uid));
-        const snap = await getDocs(q);
-        const items = snap.docs.map(doc => {
-          const data = doc.data();
-          const { uid: _, ...localData } = data;
-          const idStr = doc.id.replace(`${uid}_`, '');
-          if (idStr) {
-            localData.id = parseInt(idStr, 10);
-          }
-          return localData;
-        });
-        
-        await localDb.transaction('rw', localTable, async () => {
-          await localTable.clear();
+      // 2. Collections
+      const collectionsToSync: Array<{ name: string; table: any }> = [
+        { name: 'quests', table: localDb.quests },
+        { name: 'dungeons', table: localDb.dungeons },
+        { name: 'inventory', table: localDb.inventory },
+        { name: 'shopItems', table: localDb.shopItems },
+        { name: 'vesselLogs', table: localDb.vesselLogs },
+        { name: 'weeklyReviews', table: localDb.weeklyReviews },
+        { name: 'tasks', table: localDb.tasks },
+        { name: 'ledger', table: localDb.ledger },
+        { name: 'nutritionLogs', table: localDb.nutritionLogs },
+        { name: 'tacticalLogs', table: localDb.tacticalLogs },
+        { name: 'missionLogs', table: localDb.missionLogs },
+        { name: 'timetable', table: localDb.timetable },
+        { name: 'badHabits', table: localDb.badHabits },
+        { name: 'habitUrgeLogs', table: localDb.habitUrgeLogs },
+        { name: 'systemLogs', table: localDb.systemLogs },
+        { name: 'foodTemplates', table: localDb.foodTemplates },
+        { name: 'questTemplates', table: localDb.questTemplates },
+      ];
+
+      for (const col of collectionsToSync) {
+        try {
+          const q = query(collection(cloudDb, col.name), where("uid", "==", uid));
+          const snap = await getDocs(q);
+          const items = snap.docs.map(docSnap => {
+            const data = docSnap.data();
+            const { uid: _, ...localData } = data;
+            const parts = docSnap.id.split('_');
+            const rawId = parts.length > 1 ? parts[parts.length - 1] : docSnap.id;
+            const parsedId = parseInt(rawId, 10);
+            if (!Number.isNaN(parsedId) && parsedId > 0) {
+              localData.id = parsedId;
+            }
+            return localData;
+          }).filter(item => item && Object.keys(item).length > 0);
+
           if (items.length > 0) {
-            await localTable.bulkAdd(items);
+            await localDb.transaction('rw', col.table, async () => {
+              await col.table.clear();
+              await col.table.bulkAdd(items);
+            });
           }
-        });
-      };
+        } catch (colErr) {
+          console.warn(`Pulling collection ${col.name} warning:`, colErr);
+        }
+      }
 
-      await Promise.all([
-        syncCollection('quests', localDb.quests),
-        syncCollection('dungeons', localDb.dungeons),
-        syncCollection('inventory', localDb.inventory),
-        syncCollection('shopItems', localDb.shopItems),
-        syncCollection('vesselLogs', localDb.vesselLogs),
-        syncCollection('weeklyReviews', localDb.weeklyReviews),
-        syncCollection('tasks', localDb.tasks),
-        syncCollection('ledger', localDb.ledger),
-        syncCollection('nutritionLogs', localDb.nutritionLogs),
-        syncCollection('tacticalLogs', localDb.tacticalLogs),
-        syncCollection('missionLogs', localDb.missionLogs),
-      ]);
-
-      toast.success("Data pulled from cloud");
+      toast.success("Cloud data restored successfully!");
     } catch (error) {
-      console.error("Pull error:", error);
+      console.error("Pull from cloud error:", error);
       throw error;
     }
   };
@@ -250,10 +219,11 @@ export function useCloudSync() {
   const clearCloudData = async (uid: string) => {
     try {
       setIsSyncing(true);
-      const collections = [
+      const collectionsNames = [
         'quests', 'dungeons', 'inventory', 'shopItems', 'vesselLogs', 
         'weeklyReviews', 'tasks', 'ledger', 'nutritionLogs', 
-        'tacticalLogs', 'missionLogs'
+        'tacticalLogs', 'missionLogs', 'timetable', 'badHabits',
+        'habitUrgeLogs', 'systemLogs', 'foodTemplates', 'questTemplates'
       ];
 
       const chunks: Promise<void>[] = [];
@@ -264,19 +234,22 @@ export function useCloudSync() {
       currentBatch.delete(doc(cloudDb, 'userStats', uid));
       opCount++;
 
-      // Delete other collections
-      for (const collName of collections) {
-        const q = query(collection(cloudDb, collName), where("uid", "==", uid));
-        const snap = await getDocs(q);
-        snap.docs.forEach(d => {
-          currentBatch.delete(d.ref);
-          opCount++;
-          if (opCount >= 400) {
-            chunks.push(currentBatch.commit());
-            currentBatch = writeBatch(cloudDb);
-            opCount = 0;
-          }
-        });
+      for (const collName of collectionsNames) {
+        try {
+          const q = query(collection(cloudDb, collName), where("uid", "==", uid));
+          const snap = await getDocs(q);
+          snap.docs.forEach(d => {
+            currentBatch.delete(d.ref);
+            opCount++;
+            if (opCount >= 400) {
+              chunks.push(currentBatch.commit());
+              currentBatch = writeBatch(cloudDb);
+              opCount = 0;
+            }
+          });
+        } catch (e) {
+          console.warn(`Clear collection ${collName} warning:`, e);
+        }
       }
 
       if (opCount > 0) {
@@ -298,6 +271,7 @@ export function useCloudSync() {
     try {
       await pushToCloud(user.uid);
       setLastSync(new Date());
+      toast.success("Data synced to cloud!");
     } catch (error) {
       toast.error("Failed to force sync");
     } finally {
@@ -305,5 +279,5 @@ export function useCloudSync() {
     }
   };
 
-  return { isSyncing, lastSync, forceSync };
+  return { isSyncing, lastSync, forceSync, clearCloudData };
 }

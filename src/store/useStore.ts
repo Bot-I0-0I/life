@@ -10,7 +10,7 @@ interface AppState {
   layoutMode: LayoutMode;
   densityMode: DensityMode;
   enableCRTScanlines: boolean;
-  currentView: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub' | 'vessel' | 'training' | 'timetable';
+  currentView: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub' | 'vessel' | 'training' | 'timetable' | 'habits';
   levelUpModal: number | null;
   showActiveQuestTicker: boolean;
   showAttributeProgressBars: boolean;
@@ -21,7 +21,7 @@ interface AppState {
   setLayoutMode: (mode: LayoutMode) => void;
   setDensityMode: (density: DensityMode) => void;
   toggleCRTScanlines: () => void;
-  setView: (view: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub' | 'vessel' | 'training' | 'timetable') => void;
+  setView: (view: 'status' | 'quests' | 'dungeons' | 'tactical' | 'store' | 'reviews' | 'scheduler' | 'ledger' | 'settings' | 'nutrition' | 'hub' | 'vessel' | 'training' | 'timetable' | 'habits') => void;
   setLevelUpModal: (level: number | null) => void;
   toggleHUDComponent: (key: 'showActiveQuestTicker' | 'showAttributeProgressBars' | 'showRadarChart' | 'showMuscleFigurine') => void;
 }

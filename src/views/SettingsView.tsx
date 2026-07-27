@@ -26,7 +26,7 @@ export function SettingsView() {
 
   const { theme, toggleTheme, showActiveQuestTicker, showAttributeProgressBars, showRadarChart, showMuscleFigurine, toggleHUDComponent } = useStore();
   const { user, isGuest } = useAuth();
-  const { isSyncing, lastSync, forceSync } = useCloudSync();
+  const { isSyncing, lastSync, forceSync, clearCloudData } = useCloudSync();
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   
   const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
@@ -977,12 +977,49 @@ export function SettingsView() {
                 </div>
               </div>
               
-              <div className="pt-4 border-t border-[#262626]">
+              <div className="pt-4 border-t border-[#262626] space-y-3">
+                <div className="text-[10px] text-[#888] font-mono uppercase tracking-wider">REPOSITORY MIGRATION & CLOUD REPAIR</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button 
+                    onClick={async () => {
+                      if (!user) {
+                        toast.error("Please sign in to sync cloud data.");
+                        return;
+                      }
+                      await forceSync();
+                    }}
+                    disabled={isSyncing}
+                    className="bg-teal-950/40 border border-teal-800/60 hover:bg-teal-900/50 text-teal-300 px-3 py-2.5 rounded-sm font-mono text-[10px] font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw className={cn("w-3.5 h-3.5 text-teal-400", isSyncing && "animate-spin")} />
+                    FORCE PUSH LOCAL TO CLOUD
+                  </button>
+
+                  <button 
+                    onClick={async () => {
+                      if (!user) {
+                        toast.error("Please sign in to manage cloud data.");
+                        return;
+                      }
+                      if (window.confirm("Wipe old repository data on cloud and re-upload fresh local data?")) {
+                        await clearCloudData(user.uid);
+                        await forceSync();
+                        toast.success("Cloud database reset and synchronized with current repository data!");
+                      }
+                    }}
+                    disabled={isSyncing}
+                    className="bg-amber-950/40 border border-amber-800/60 hover:bg-amber-900/50 text-amber-300 px-3 py-2.5 rounded-sm font-mono text-[10px] font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Cloud className="w-3.5 h-3.5 text-amber-400" />
+                    WIPE CLOUD & RE-SYNC FRESH
+                  </button>
+                </div>
+
                 <button 
                   onClick={() => setShowResetConfirm(true)}
                   className="w-full bg-red-950/30 border border-red-900/50 hover:bg-red-900/50 text-red-400 px-4 py-3 rounded-sm font-mono text-xs font-bold tracking-widest uppercase transition-colors flex items-center justify-center"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" /> FACTORY RESET (WIPE ALL DATA)
+                  <Trash2 className="w-4 h-4 mr-2" /> FACTORY RESET (WIPE LOCAL & CLOUD DATA)
                 </button>
               </div>
             </div>

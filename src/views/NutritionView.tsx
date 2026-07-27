@@ -6,6 +6,7 @@ import { cn, getRank } from '../lib/utils';
 import { format, subDays, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { PakistaniFoodsSection } from '../components/PakistaniFoodsSection';
+import { toast } from 'sonner';
 
 const EXPANDED_SQL_FOOD_DATABASE = [
   // Pakistani Curries & Mains
@@ -254,7 +255,7 @@ export function NutritionView() {
 
     await addXp(item.calories / 2 + 50);
     await logSystemEvent('NUTRITION', 'SUCCESS', `Logged from SQL Data House: ${item.name}`);
-    alert(`✅ Logged ${item.name} (${item.calories} KCAL) into ${selectedMealSlot}!`);
+    toast.success(`Logged ${item.name} (${item.calories} KCAL) into ${selectedMealSlot}!`);
   };
 
   const handleDeleteLog = async (id: number) => {
@@ -663,7 +664,7 @@ export function NutritionView() {
             });
             await addXp(item.calories / 2 + 50);
             await logSystemEvent('NUTRITION', 'SUCCESS', `Logged diet item: ${item.name}`);
-            alert(`✅ Logged ${item.name} (${item.calories} KCAL) to today's log!`);
+            toast.success(`Logged ${item.name} (${item.calories} KCAL) to today's log!`);
           }}
           onLogDietPlan={async (plan) => {
             for (const m of plan.meals) {
@@ -679,7 +680,7 @@ export function NutritionView() {
             }
             await addXp(plan.totalCalories / 2 + 150);
             await logSystemEvent('NUTRITION', 'SUCCESS', `Executed diet plan: ${plan.name}`);
-            alert(`🔥 Executed Full Diet Protocol: ${plan.name} (${plan.totalCalories} KCAL logged for today)!`);
+            toast.success(`Executed Diet Protocol: ${plan.name} (${plan.totalCalories} KCAL logged)!`);
           }}
           onLogDietMeal={async (meal) => {
             await db.nutritionLogs.add({
@@ -693,7 +694,7 @@ export function NutritionView() {
             });
             await addXp(meal.calories / 2 + 30);
             await logSystemEvent('NUTRITION', 'SUCCESS', `Logged plan meal: ${meal.name}`);
-            alert(`✅ Logged ${meal.name} (${meal.calories} KCAL) to today's log!`);
+            toast.success(`Logged ${meal.name} (${meal.calories} KCAL) to today's log!`);
           }}
         />
       )}
@@ -901,7 +902,7 @@ export function NutritionView() {
             <button
               onClick={() => {
                 setShowFormulaModal(false);
-                alert(`✅ Applied ${calcFormula.toUpperCase()} formula targets: ${targetCalories} KCAL (${targetProtein}g P, ${targetCarbs}g C, ${targetFat}g F)`);
+                toast.success(`Applied ${calcFormula.toUpperCase()} formula targets: ${targetCalories} KCAL (${targetProtein}g P, ${targetCarbs}g C, ${targetFat}g F)`);
               }}
               className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-black font-mono text-xs font-bold uppercase rounded-sm transition-colors"
             >

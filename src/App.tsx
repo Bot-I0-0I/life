@@ -26,6 +26,7 @@ const HubView = lazy(() => import('./views/HubView').then(m => ({ default: m.Hub
 const VesselTrackerView = lazy(() => import('./views/VesselTrackerView').then(m => ({ default: m.VesselTrackerView })));
 const TrainingView = lazy(() => import('./views/TrainingView').then(m => ({ default: m.TrainingView })));
 const TimetableScheduleView = lazy(() => import('./views/TimetableScheduleView').then(m => ({ default: m.TimetableScheduleView })));
+const HabitBreakerView = lazy(() => import('./views/HabitBreakerView').then(m => ({ default: m.HabitBreakerView })));
 
 function ViewLoader() {
   return (
@@ -52,8 +53,10 @@ export default function App() {
   useEffect(() => {
     if (theme === 'light') {
       document.documentElement.classList.add('light-theme');
+      document.body.classList.add('light-theme');
     } else {
       document.documentElement.classList.remove('light-theme');
+      document.body.classList.remove('light-theme');
     }
   }, [theme]);
 
@@ -62,6 +65,7 @@ export default function App() {
       case 'status': return <StatusView />;
       case 'scheduler': return <SchedulerView initialTab="directives" />;
       case 'timetable': return <TimetableScheduleView />;
+      case 'habits': return <HabitBreakerView />;
       case 'dungeons': return <DungeonView />;
       case 'tactical': return <MissionAnalyticsView />;
       case 'store': return <StoreView />;

@@ -201,6 +201,37 @@ export interface TimetableBlock {
   lastCompletedDate?: string; // "yyyy-MM-dd"
 }
 
+export interface BadHabit {
+  id?: number;
+  title: string;
+  category: 'substance' | 'digital' | 'financial' | 'behavioral' | 'mental' | 'other';
+  severity: 'extreme' | 'high' | 'moderate';
+  startDate: string; // ISO timestamp when current clean streak started
+  lastRelapseDate?: string;
+  cleanDays: number;
+  longestCleanDays: number;
+  cueTriggers: string[];
+  substituteBehavior: string;
+  frictionBarrier: string;
+  nonNegotiableContract: string;
+  financialCostPerDay?: number;
+  timeCostMinutesPerDay?: number;
+  relapsesCount: number;
+  notes?: string;
+  active: boolean;
+}
+
+export interface HabitUrgeLog {
+  id?: number;
+  habitId: number;
+  timestamp: string;
+  intensity: number; // 1-10
+  trigger: string;
+  context?: string;
+  actionTaken: 'surfed_urge' | 'used_substitute' | 'relapsed' | 'emergency_sos';
+  notes?: string;
+}
+
 export class SystemDatabase extends Dexie {
   userStats!: Table<UserStats, number>;
   quests!: Table<Quest, number>;
@@ -218,6 +249,8 @@ export class SystemDatabase extends Dexie {
   missionLogs!: Table<MissionLog, number>;
   systemLogs!: Table<SystemLog, number>;
   timetable!: Table<TimetableBlock, number>;
+  badHabits!: Table<BadHabit, number>;
+  habitUrgeLogs!: Table<HabitUrgeLog, number>;
 
   constructor() {
     super('SystemDB');
@@ -347,7 +380,7 @@ export class SystemDatabase extends Dexie {
       missionLogs: '++id, date, category',
       systemLogs: '++id, timestamp, category, level'
     });
-    this.version(11).stores({
+    this.version(12).stores({
       userStats: 'id',
       quests: '++id, date, type, completed',
       dungeons: '++id, status',
@@ -363,12 +396,63 @@ export class SystemDatabase extends Dexie {
       questTemplates: '++id, title',
       missionLogs: '++id, date, category',
       systemLogs: '++id, timestamp, category, level',
-      timetable: '++id, startTime, category'
+      timetable: '++id, startTime, category',
+      badHabits: '++id, category, active, severity',
+      habitUrgeLogs: '++id, habitId, timestamp'
     });
   }
 }
 
 export const db = new SystemDatabase();
+
+export async function seedDefaultHabitsIfEmpty() {
+  try {
+    const count = await db.badHabits.count();
+    if (count === 0) {
+      const pastDate3DaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
+      const pastDate14DaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+
+      await db.badHabits.bulkAdd([
+        {
+          title: 'Late Night Doomscrolling & Screen Binging',
+          category: 'digital',
+          severity: 'high',
+          startDate: pastDate3DaysAgo,
+          cleanDays: 3,
+          longestCleanDays: 12,
+          cueTriggers: ['In bed alone past 11 PM', 'High tiredness / brain fatigue', 'Anxiety about tomorrow'],
+          substituteBehavior: 'Place phone in living room at 10 PM. Read 10 pages of a physical book or do 4-7-8 breathing.',
+          frictionBarrier: 'App screen timer lock + Physical phone charging station outside bedroom',
+          nonNegotiableContract: 'I solemnly vow to protect my nervous system and sleep quality by cutting off screens 1 hour before sleep.',
+          financialCostPerDay: 0,
+          timeCostMinutesPerDay: 90,
+          relapsesCount: 2,
+          notes: 'Dopamine exhaustion ruins focus the next morning.',
+          active: true
+        },
+        {
+          title: 'Unplanned Junk Food & Binge Snacking',
+          category: 'substance',
+          severity: 'moderate',
+          startDate: pastDate14DaysAgo,
+          cleanDays: 14,
+          longestCleanDays: 14,
+          cueTriggers: ['Work stress at 3 PM', 'Boredom while watching TV', 'Low sugar energy dip'],
+          substituteBehavior: 'Drink 500ml ice cold lemon water + eat 1 handful of almonds or whey shake',
+          frictionBarrier: 'Never keep processed snacks in house. Unsubscribe from delivery apps.',
+          nonNegotiableContract: 'I control my vessel. Food is fuel for power, not an emotional tranquilizer.',
+          financialCostPerDay: 8,
+          timeCostMinutesPerDay: 30,
+          relapsesCount: 1,
+          notes: 'Main cause of energy crashes.',
+          active: true
+        }
+      ]);
+    }
+  } catch (err) {
+    console.warn('Seed default habits warning:', err);
+  }
+}
 
 export async function logSystemEvent(
   category: 'QUEST' | 'WORKOUT' | 'NUTRITION' | 'VESSEL' | 'AUTH' | 'API' | 'ADMIN' | 'SYSTEM',

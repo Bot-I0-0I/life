@@ -8,7 +8,7 @@ import { CommandPalette } from './CommandPalette';
 import {
   Activity, Shield, ShoppingCart, Swords, EyeOff, Eye, BookOpen, CalendarDays, Wallet,
   Settings, User, Flame, LogIn, LogOut, LayoutGrid, Menu, X, BrainCircuit,
-  Dumbbell, Heart, Palette, Clock, Search, ChevronLeft, ChevronRight, Zap, Coins
+  Dumbbell, Heart, Palette, Clock, Search, ChevronLeft, ChevronRight, Zap, Coins, ShieldAlert
 } from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -48,8 +48,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       ]
     },
     {
-      title: "PHYSICAL & VITALITY",
+      title: "PHYSICAL & RESTRAINT",
       items: [
+        { id: 'habits', icon: ShieldAlert, label: 'Habit Breaker' },
         { id: 'training', icon: Dumbbell, label: 'Training Engine' },
         { id: 'nutrition', icon: Flame, label: 'Diets & Macros' },
         { id: 'vessel', icon: Heart, label: 'Vessel Tracker' },
@@ -85,10 +86,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const mobileNavItems: Array<{ id: string; icon: any; label: string; badge?: number | string }> = [
     { id: 'status', icon: Activity, label: 'STATUS' },
+    { id: 'habits', icon: ShieldAlert, label: 'HABITS' },
     { id: 'timetable', icon: Clock, label: 'TIMETABLE', badge: `${userStats?.currentStreak || 0}D` },
     { id: 'training', icon: Dumbbell, label: 'TRAINING' },
-    { id: 'nutrition', icon: Flame, label: 'DIETS' },
-    { id: 'vessel', icon: Heart, label: 'VESSEL' },
+    { id: 'nutrition', icon: Flame, label: 'DIET' },
   ];
 
   const viewTitles: Record<string, { title: string, subtitle: string }> = {
@@ -96,6 +97,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     status: { title: 'STATUS WINDOW', subtitle: 'Identity Dashboard & Attribute Matrix' },
     scheduler: { title: 'DIRECTIVES', subtitle: 'Schedule, Routines & Habit Tracking' },
     timetable: { title: 'DAILY TIMETABLE', subtitle: '24-Hour Schedule Matrix & Focus Sessions' },
+    habits: { title: 'HABIT BREAKER', subtitle: 'Vice Eradication, Urge Surfing & Deconstruction' },
     dungeons: { title: 'INSTANCES', subtitle: 'Combat, Boss Battles & Dungeons' },
     tactical: { title: 'GOAL ANALYTICS', subtitle: 'Tactical Directives & Milestone Tracking' },
     training: { title: 'TRAINING ENGINE', subtitle: 'Executable Workout Plans & Body Targets' },
@@ -353,19 +355,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Mobile View Title Ribbon */}
-        <div className="lg:hidden px-4 py-2 bg-[#121212] border-b border-[#262626] flex items-center justify-between">
-          <div className="min-w-0">
-            <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider truncate">
+        <div className="lg:hidden px-3.5 py-2 bg-[#121212] border-b border-[#262626] flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider truncate flex items-center gap-1.5">
               {currentTitleInfo.title}
             </h2>
             <p className="text-[9px] font-mono text-[#888] truncate">{currentTitleInfo.subtitle}</p>
           </div>
-          <button
-            onClick={() => setIsThemeModalOpen(true)}
-            className="p-1.5 bg-[#181818] border border-cyan-500/30 rounded text-cyan-400 text-[10px] font-mono flex items-center gap-1"
-          >
-            <Palette className="w-3 h-3" /> THEME
-          </button>
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+              className="px-2 py-1.5 bg-cyan-950/60 border border-cyan-800/80 rounded-md text-cyan-400 text-[10px] font-mono font-bold flex items-center gap-1 active:bg-cyan-900"
+            >
+              <LayoutGrid className="w-3 h-3 text-cyan-400" /> VIEWS
+            </button>
+
+            <button
+              onClick={() => setIsThemeModalOpen(true)}
+              className="p-1.5 bg-[#181818] border border-[#333] hover:border-cyan-500/40 rounded text-cyan-400 text-[10px] font-mono flex items-center gap-1"
+              title="Theme Gallery"
+            >
+              <Palette className="w-3 h-3" />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Full Navigation Overlay Drawer */}
@@ -465,7 +478,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[#262626] bg-[#0A0A0A]/95 backdrop-blur-xl z-50 flex justify-around p-1.5 shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[#262626] bg-[#0A0A0A]/95 backdrop-blur-xl z-50 flex justify-around p-1 pb-safe shadow-2xl">
         {mobileNavItems.map((item) => {
           const isSelected = currentView === item.id;
           const Icon = item.icon;
@@ -474,14 +487,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
               key={item.id}
               onClick={() => setView(item.id as any)}
               className={cn(
-                "flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all duration-200 relative flex-1 min-w-0 touch-target",
+                "flex flex-col items-center justify-center py-2 px-1.5 rounded-xl transition-all duration-200 relative flex-1 min-w-0 min-h-[52px] touch-target active:scale-95",
                 isSelected
-                  ? "bg-[#181818] border border-cyan-500/40 text-cyan-400 shadow-md"
-                  : "text-[#777] hover:text-[#AAA]"
+                  ? "bg-[#181818] border border-cyan-500/50 text-cyan-400 shadow-md font-bold"
+                  : "text-[#888] hover:text-[#CCC]"
               )}
             >
-              <Icon className={cn("w-5 h-5 mb-0.5", isSelected && "animate-pulse")} />
-              <span className="text-[9px] font-mono uppercase tracking-wider text-center truncate w-full font-bold">
+              <Icon className={cn("w-5 h-5 mb-0.5 flex-shrink-0", isSelected && "animate-pulse text-cyan-400")} />
+              <span className={cn(
+                "text-[9px] font-mono uppercase tracking-wider text-center truncate w-full",
+                isSelected ? "text-cyan-400 font-bold" : "text-[#888]"
+              )}>
                 {item.label}
               </span>
               {item.badge !== undefined && (

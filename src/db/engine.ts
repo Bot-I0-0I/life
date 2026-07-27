@@ -1,16 +1,41 @@
 import { useEffect } from 'react';
-import { db } from './db';
-import { format, startOfWeek } from 'date-fns';
+import { db, seedDefaultHabitsIfEmpty } from './db';
+import { format, startOfWeek, differenceInDays } from 'date-fns';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 export function useSystemEngine() {
   const userStats = useLiveQuery(() => db.userStats.get(1));
 
   useEffect(() => {
+    // Seed default bad habits if database is empty
+    seedDefaultHabitsIfEmpty();
+
     const checkMidnightReset = async () => {
       if (!userStats) return;
 
       const today = format(new Date(), 'yyyy-MM-dd');
+
+      // Update habit clean days dynamically
+      try {
+        const habits = await db.badHabits.where('active').equals(1).toArray();
+        const now = new Date();
+        for (const h of habits) {
+          if (h.id && h.startDate) {
+            const start = new Date(h.startDate);
+            const calculatedClean = Math.max(0, differenceInDays(now, start));
+            const newLongest = Math.max(h.longestCleanDays || 0, calculatedClean);
+            if (h.cleanDays !== calculatedClean || h.longestCleanDays !== newLongest) {
+              await db.badHabits.update(h.id, {
+                cleanDays: calculatedClean,
+                longestCleanDays: newLongest
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Habit days update warning:', e);
+      }
+
       if (userStats.lastResetDate !== today) {
         // It's a new day. Check yesterday's quests.
         const yesterdayQuests = await db.quests
