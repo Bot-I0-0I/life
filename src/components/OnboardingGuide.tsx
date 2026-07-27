@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle, ChevronRight, ChevronLeft, X, Shield, Flame, Wallet, Swords, Award, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface OnboardingGuideProps {
   themeColor: string;

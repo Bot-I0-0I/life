@@ -11,7 +11,7 @@ import {
   Dumbbell, Heart, Palette, Clock, Search, ChevronLeft, ChevronRight, Zap, Coins
 } from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../AuthContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {

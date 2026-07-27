@@ -198,6 +198,7 @@ export interface TimetableBlock {
   color?: string;
   notes?: string;
   completedToday?: boolean;
+  lastCompletedDate?: string; // "yyyy-MM-dd"
 }
 
 export class SystemDatabase extends Dexie {

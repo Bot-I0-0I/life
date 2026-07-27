@@ -16,6 +16,7 @@ export function SchedulerView({ initialTab = 'timetable' }: { initialTab?: 'time
   const [time, setTime] = useState('12:00');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [xpReward, setXpReward] = useState(50);
+  const [taskRecurrence, setTaskRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
 
   const level = Math.floor((userStats?.xp || 0) / 1000) + 1;
   const rankColor = getRank(level).color;
@@ -32,11 +33,13 @@ export function SchedulerView({ initialTab = 'timetable' }: { initialTab?: 'time
       priority,
       completed: false,
       xpReward,
-      recurrence: 'none'
+      recurrence: taskRecurrence
     });
 
     setTitle('');
     setXpReward(50);
+    setTaskRecurrence('none');
+    toast.success(`Directive "${title}" added!`);
   };
 
   const toggleTask = async (task: Task) => {
@@ -333,6 +336,20 @@ export function SchedulerView({ initialTab = 'timetable' }: { initialTab?: 'time
                   <option value="low">LOW</option>
                   <option value="medium">MEDIUM</option>
                   <option value="high">HIGH</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-[#A3A3A3] mb-1 tracking-widest uppercase">RECURRENCE</label>
+                <select 
+                  value={taskRecurrence}
+                  onChange={(e) => setTaskRecurrence(e.target.value as any)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-sm px-4 py-3 text-white font-mono text-xs focus:outline-none focus:ring-1 transition-colors uppercase"
+                  style={{ '--tw-ring-color': themeColor, outlineColor: themeColor } as any}
+                >
+                  <option value="none">ONCE (SINGLE EXECUTION)</option>
+                  <option value="daily">DAILY (RECUR EVERY DAY)</option>
+                  <option value="weekly">WEEKLY (RECUR EVERY WEEK)</option>
+                  <option value="monthly">MONTHLY (RECUR EVERY MONTH)</option>
                 </select>
               </div>
               <div>

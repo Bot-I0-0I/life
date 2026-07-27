@@ -5,7 +5,7 @@ import { cn, getRank } from '../lib/utils';
 import { 
   Clock, Plus, Trash2, CheckCircle, Circle, Sparkles, Calendar, 
   Gamepad2, Palette, Dumbbell, BookOpen, Briefcase, Heart, AlertCircle,
-  ChevronRight, Tag, Zap, Check, Edit3, ShieldAlert, Flame
+  ChevronRight, Tag, Zap, Check, Edit3, ShieldAlert, Flame, Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,13 +29,24 @@ const WEEKDAYS = [
   { label: 'SAT', value: 6 },
 ];
 
+const WEEKDAY_TABS = [
+  { label: 'ALL BLOCKS', value: 'all' },
+  { label: 'SUN', value: 0 },
+  { label: 'MON', value: 1 },
+  { label: 'TUE', value: 2 },
+  { label: 'WED', value: 3 },
+  { label: 'THU', value: 4 },
+  { label: 'FRI', value: 5 },
+  { label: 'SAT', value: 6 },
+];
+
 const PRESETS = [
   { title: 'Guitar / Music Hobby', category: 'hobby', startTime: '15:00', endTime: '16:00', days: [0,1,2,3,4,5,6], notes: 'Chord practice & song learning' },
   { title: 'Deep Coding & App Build', category: 'study', startTime: '20:00', endTime: '22:00', days: [1,2,3,4,5], notes: 'Uninterrupted flow state development' },
   { title: 'Night Book Reading', category: 'hobby', startTime: '21:30', endTime: '22:30', days: [0,1,2,3,4,5,6], notes: 'Fiction or technical literature' },
   { title: 'Digital Art / Sketching', category: 'hobby', startTime: '16:30', endTime: '17:30', days: [1,3,5], notes: 'Character design & study' },
   { title: 'Esports & Gaming Session', category: 'gaming', startTime: '22:00', endTime: '23:30', days: [0,5,6], notes: 'Competitive squad ranked play' },
-  { title: 'Morning Workout & Stretch', category: 'workout', startTime: '07:00', endTime: '08:00', days: [1,2,3,4,5,6,0], notes: 'Dungeon physical training' }
+  { title: 'Morning Workout & Stretch', category: 'workout', startTime: '07:00', endTime: '08:00', days: [0,1,2,3,4,5,6], notes: 'Dungeon physical training' }
 ];
 
 export function TimetableScheduleView() {
@@ -46,7 +57,7 @@ export function TimetableScheduleView() {
   const { color: rankColor } = getRank(level);
   const themeColor = userStats?.selectedColor || rankColor;
 
-  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay());
+  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   // Form State for Add / Edit
@@ -96,23 +107,34 @@ export function TimetableScheduleView() {
     return () => clearInterval(interval);
   }, [isFocusRunning, focusRemainingSeconds, focusBlock]);
 
+  // Today ISO date string
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const isBlockCompletedToday = (block: TimetableBlock) => {
+    return Boolean(block.completedToday && block.lastCompletedDate === todayStr);
+  };
+
   // Filter blocks by day and category
   const filteredBlocks = timetableBlocks
     .filter(block => {
-      const matchesDay = block.daysOfWeek.includes(selectedDay);
-      const matchesCat = filterCategory === 'all' || block.category === filterCategory;
+      const days = Array.isArray(block.daysOfWeek) && block.daysOfWeek.length > 0 ? block.daysOfWeek : [0, 1, 2, 3, 4, 5, 6];
+      const matchesDay = selectedDay === 'all' || days.includes(Number(selectedDay));
+      const blockCat = (block.category || 'personal').toString().toLowerCase();
+      const matchesCat = filterCategory === 'all' || blockCat === filterCategory.toLowerCase();
       return matchesDay && matchesCat;
     })
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   // Calculate day completion stats
   const totalDayBlocks = filteredBlocks.length;
-  const completedDayBlocks = filteredBlocks.filter(b => b.completedToday).length;
+  const completedDayBlocks = filteredBlocks.filter(isBlockCompletedToday).length;
   const dayCompletionPercent = totalDayBlocks > 0 ? Math.round((completedDayBlocks / totalDayBlocks) * 100) : 0;
 
   // Determine current active block
+  const currentDayNum = new Date().getDay();
   const currentActiveBlock = timetableBlocks.find(block => {
-    if (!block.daysOfWeek.includes(selectedDay)) return false;
+    const days = Array.isArray(block.daysOfWeek) && block.daysOfWeek.length > 0 ? block.daysOfWeek : [0, 1, 2, 3, 4, 5, 6];
+    if (!days.includes(currentDayNum)) return false;
     return currentTimeStr >= block.startTime && currentTimeStr <= block.endTime;
   });
 
@@ -130,12 +152,56 @@ export function TimetableScheduleView() {
   const handleOpenEditModal = (block: TimetableBlock) => {
     setEditingBlock(block);
     setNewTitle(block.title);
-    setNewCategory(block.category);
+    setNewCategory((block.category || 'hobby').toString().toLowerCase() as any);
     setNewStartTime(block.startTime);
     setNewEndTime(block.endTime);
-    setSelectedDays(block.daysOfWeek);
+    setSelectedDays(Array.isArray(block.daysOfWeek) ? block.daysOfWeek : [0, 1, 2, 3, 4, 5, 6]);
     setNewNotes(block.notes || '');
     setShowAddModal(true);
+  };
+
+  const getRecurrenceLabel = (days?: number[]) => {
+    if (!days || days.length === 0 || days.length === 7) return { label: 'EVERYDAY', type: 'all' };
+    const sorted = [...days].sort((a, b) => a - b);
+    if (sorted.length === 5 && JSON.stringify(sorted) === JSON.stringify([1,2,3,4,5])) {
+      return { label: 'MON–FRI', type: 'weekdays' };
+    }
+    if (sorted.length === 2 && JSON.stringify(sorted) === JSON.stringify([0,6])) {
+      return { label: 'WEEKENDS', type: 'weekends' };
+    }
+    const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    return { label: sorted.map(d => dayNames[d]).join(', '), type: 'custom' };
+  };
+
+  const handleDuplicateBlock = async (block: TimetableBlock) => {
+    try {
+      await db.timetable.add({
+        title: `${block.title} (COPY)`,
+        category: block.category,
+        startTime: block.startTime,
+        endTime: block.endTime,
+        daysOfWeek: block.daysOfWeek ? [...block.daysOfWeek] : [0, 1, 2, 3, 4, 5, 6],
+        notes: block.notes,
+        completedToday: false
+      });
+      toast.success(`Cloned "${block.title}"!`);
+    } catch (err) {
+      toast.error('Failed to duplicate block');
+    }
+  };
+
+  const handleCopyScheduleText = () => {
+    if (timetableBlocks.length === 0) {
+      toast.info("No schedule blocks to export!");
+      return;
+    }
+    const sorted = [...timetableBlocks].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const text = sorted.map(b => {
+      const rec = getRecurrenceLabel(b.daysOfWeek).label;
+      return `• [${b.startTime} - ${b.endTime}] ${b.title.toUpperCase()} (${b.category.toUpperCase()}) - ${rec}${b.notes ? ` -- ${b.notes}` : ''}`;
+    }).join('\n');
+    navigator.clipboard.writeText(`=== MY SYSTEM ROUTINE SCHEDULE ===\n\n${text}`);
+    toast.success("Schedule summary copied to clipboard!");
   };
 
   const handleSaveBlock = async (e: React.FormEvent) => {
@@ -145,30 +211,40 @@ export function TimetableScheduleView() {
       return;
     }
 
+    const daysToSave = selectedDays.length > 0 ? selectedDays : [0, 1, 2, 3, 4, 5, 6];
+
     try {
       if (editingBlock && editingBlock.id) {
         await db.timetable.update(editingBlock.id, {
           title: newTitle.trim(),
-          category: newCategory,
+          category: newCategory.toLowerCase() as any,
           startTime: newStartTime,
           endTime: newEndTime,
-          daysOfWeek: selectedDays,
+          daysOfWeek: daysToSave,
           notes: newNotes.trim() || undefined,
         });
         toast.success(`Updated "${newTitle}"!`);
       } else {
         await db.timetable.add({
           title: newTitle.trim(),
-          category: newCategory,
+          category: newCategory.toLowerCase() as any,
           startTime: newStartTime,
           endTime: newEndTime,
-          daysOfWeek: selectedDays,
+          daysOfWeek: daysToSave,
           notes: newNotes.trim() || undefined,
           completedToday: false
         });
         toast.success(`Timetable entry "${newTitle}" registered!`);
         logSystemEvent('QUEST', 'SUCCESS', `Added timetable slot: ${newTitle} (${newStartTime}-${newEndTime})`);
       }
+
+      // Auto-switch view if newly added/updated block wouldn't be visible under current day filter
+      if (selectedDay !== 'all' && !daysToSave.includes(Number(selectedDay))) {
+        const dayName = WEEKDAYS.find(d => d.value === Number(selectedDay))?.label || 'selected day';
+        toast.info(`Switched to 'ALL BLOCKS' view to display routine (scheduled for ${getRecurrenceLabel(daysToSave).label}, not ${dayName}).`);
+        setSelectedDay('all');
+      }
+
       setNewTitle('');
       setNewNotes('');
       setShowAddModal(false);
@@ -189,12 +265,16 @@ export function TimetableScheduleView() {
 
   const handleToggleComplete = async (block: TimetableBlock, forceState?: boolean) => {
     if (!block.id) return;
-    const nextState = forceState !== undefined ? forceState : !block.completedToday;
-    await db.timetable.update(block.id, { completedToday: nextState });
+    const isDone = isBlockCompletedToday(block);
+    const nextState = forceState !== undefined ? forceState : !isDone;
+    await db.timetable.update(block.id, { 
+      completedToday: nextState,
+      lastCompletedDate: nextState ? todayStr : undefined
+    });
 
     if (nextState) {
       await addXp(50, block.category === 'workout' ? 'STR' : block.category === 'study' ? 'INT' : 'AGI');
-      toast.success(`Completed "${block.title}"! +50 XP awarded!`, {
+      toast.success(`Completed "${block.title}" for today! +50 XP awarded!`, {
         style: {
           background: '#0A0A0A',
           border: `1px solid ${themeColor}`,
@@ -233,10 +313,9 @@ export function TimetableScheduleView() {
 
   const toggleDaySelection = (dayVal: number) => {
     if (selectedDays.includes(dayVal)) {
-      if (selectedDays.length === 1) return;
       setSelectedDays(selectedDays.filter(d => d !== dayVal));
     } else {
-      setSelectedDays([...selectedDays, dayVal].sort());
+      setSelectedDays([...selectedDays, dayVal].sort((a, b) => a - b));
     }
   };
 
@@ -275,6 +354,15 @@ export function TimetableScheduleView() {
               <span className="text-sm font-mono font-bold text-white">{currentTimeStr || '12:00'}</span>
             </div>
           )}
+
+          <button
+            onClick={handleCopyScheduleText}
+            className="px-3.5 py-2.5 font-mono text-xs font-bold uppercase tracking-wider bg-[#141414] hover:bg-[#1a1a1a] text-[#DDD] hover:text-white border border-[#262626] rounded-sm flex items-center gap-2 transition-all"
+            title="Export full routine schedule to clipboard"
+          >
+            <Copy className="w-4 h-4 text-cyan-400" />
+            COPY SCHEDULE
+          </button>
 
           <button
             onClick={handleOpenAddModal}
@@ -457,9 +545,9 @@ export function TimetableScheduleView() {
               <button
                 onClick={async () => {
                   for (const b of filteredBlocks) {
-                    if (b.id) await db.timetable.update(b.id, { completedToday: true });
+                    if (b.id) await db.timetable.update(b.id, { completedToday: true, lastCompletedDate: todayStr });
                   }
-                  toast.success(`marked all ${filteredBlocks.length} blocks completed!`);
+                  toast.success(`Marked all ${filteredBlocks.length} blocks completed for today!`);
                 }}
                 className="px-2.5 py-1.5 bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-400 text-[10px] font-mono font-bold uppercase rounded-sm transition-all"
                 title="Mark all blocks for today completed"
@@ -469,7 +557,7 @@ export function TimetableScheduleView() {
               <button
                 onClick={async () => {
                   for (const b of filteredBlocks) {
-                    if (b.id) await db.timetable.update(b.id, { completedToday: false });
+                    if (b.id) await db.timetable.update(b.id, { completedToday: false, lastCompletedDate: undefined });
                   }
                   toast.info("Reset today's execution progress");
                 }}
@@ -507,23 +595,35 @@ export function TimetableScheduleView() {
           <div className="bg-[#0A0A0A] border border-dashed border-[#262626] rounded-sm p-12 text-center space-y-3">
             <Clock className="w-8 h-8 text-[#444] mx-auto" />
             <div className="font-mono text-sm text-[#A3A3A3] uppercase tracking-wider">
-              NO TIMETABLE BLOCKS SET FOR {WEEKDAYS.find(d => d.value === selectedDay)?.label}
+              NO TIMETABLE BLOCKS SET FOR {selectedDay === 'all' ? 'ANY DAY' : WEEKDAYS.find(d => d.value === selectedDay)?.label}
             </div>
             <p className="text-xs font-mono text-[#666] max-w-md mx-auto">
-              Add your custom daily activities from 2x:xx to 3x:xx (e.g., Hobby practice, Gaming, Study, Workout) or click a quick preset above.
+              Add your custom daily activities (e.g., Workout, Coding, Study, Hobby) or click a quick preset above.
             </p>
-            <button
-              onClick={handleOpenAddModal}
-              className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[#141414] hover:bg-[#1a1a1a] border border-[#333] text-xs font-mono text-white rounded-sm uppercase tracking-wider"
-            >
-              <Plus className="w-3.5 h-3.5" /> CREATE FIRST TIME BLOCK
-            </button>
+            <div className="flex items-center justify-center gap-3 pt-1">
+              {selectedDay !== 'all' && (
+                <button
+                  onClick={() => setSelectedDay('all')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/50 text-xs font-mono text-cyan-300 rounded-sm uppercase tracking-wider font-bold"
+                >
+                  <Calendar className="w-3.5 h-3.5" /> SHOW ALL ROUTINES
+                </button>
+              )}
+              <button
+                onClick={handleOpenAddModal}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#141414] hover:bg-[#1a1a1a] border border-[#333] text-xs font-mono text-white rounded-sm uppercase tracking-wider font-bold"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-400" /> CREATE TIME BLOCK
+              </button>
+            </div>
           </div>
         ) : (
           filteredBlocks.map(block => {
             const catInfo = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.personal;
             const CatIcon = catInfo.icon;
             const isActiveNow = currentTimeStr >= block.startTime && currentTimeStr <= block.endTime;
+            const recurrence = getRecurrenceLabel(block.daysOfWeek);
+            const isCompleted = isBlockCompletedToday(block);
 
             return (
               <div
@@ -543,12 +643,12 @@ export function TimetableScheduleView() {
                     onClick={() => handleToggleComplete(block)}
                     className={cn(
                       "p-1.5 rounded-sm border transition-colors flex-shrink-0",
-                      block.completedToday 
+                      isCompleted 
                         ? "bg-emerald-950/60 border-emerald-500 text-emerald-400" 
                         : "bg-[#141414] border-[#333] text-[#666] hover:text-white"
                     )}
                   >
-                    {block.completedToday ? <CheckCircle className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                    {isCompleted ? <CheckCircle className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                   </button>
 
                   {/* Time Badge */}
@@ -559,7 +659,7 @@ export function TimetableScheduleView() {
 
                   {/* Title and Category */}
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={cn(
                         "text-[10px] font-mono px-2 py-0.5 rounded-sm border flex items-center gap-1 uppercase tracking-wider font-bold",
                         catInfo.bg, catInfo.text, catInfo.border
@@ -567,6 +667,18 @@ export function TimetableScheduleView() {
                         <CatIcon className="w-3 h-3" />
                         {block.category}
                       </span>
+
+                      <span className={cn(
+                        "text-[9px] font-mono px-2 py-0.5 rounded-sm border uppercase tracking-wider font-bold flex items-center gap-1",
+                        recurrence.type === 'all' ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-400" :
+                        recurrence.type === 'weekdays' ? "bg-cyan-950/40 border-cyan-500/40 text-cyan-400" :
+                        recurrence.type === 'weekends' ? "bg-amber-950/40 border-amber-500/40 text-amber-400" :
+                        "bg-indigo-950/40 border-indigo-500/40 text-indigo-300"
+                      )}>
+                        <Calendar className="w-2.5 h-2.5" />
+                        {recurrence.label}
+                      </span>
+
                       {isActiveNow && (
                         <span className="text-[9px] font-mono bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/40 px-1.5 py-0.5 rounded-sm uppercase tracking-widest font-bold flex items-center">
                           <Zap className="w-2.5 h-2.5 mr-1 animate-ping" /> IN PROGRESS
@@ -575,7 +687,7 @@ export function TimetableScheduleView() {
                     </div>
                     <h3 className={cn(
                       "text-sm md:text-base font-mono font-bold tracking-wider uppercase",
-                      block.completedToday ? "text-[#777] line-through" : "text-white"
+                      isCompleted ? "text-[#777] line-through" : "text-white"
                     )}>
                       {block.title}
                     </h3>
@@ -593,6 +705,14 @@ export function TimetableScheduleView() {
                     title="Start Live Focus Timer"
                   >
                     <Zap className="w-3 h-3" /> TIMER
+                  </button>
+
+                  <button
+                    onClick={() => handleDuplicateBlock(block)}
+                    className="p-1.5 text-[#A3A3A3] hover:text-cyan-300 bg-[#141414] border border-[#262626] hover:border-cyan-500/40 rounded-sm transition-colors"
+                    title="Duplicate / Clone time block"
+                  >
+                    <Copy className="w-4 h-4" />
                   </button>
 
                   <button
@@ -743,9 +863,59 @@ export function TimetableScheduleView() {
               </div>
 
               <div>
-                <label className="text-[10px] font-mono text-[#A3A3A3] uppercase tracking-widest block mb-1">
-                  RECURRING DAYS
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-mono text-[#A3A3A3] uppercase tracking-widest block">
+                    RECURRING DAYS
+                  </label>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[10px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDays([0, 1, 2, 3, 4, 5, 6])}
+                    className={cn(
+                      "px-2 py-0.5 rounded-sm border transition-colors font-bold uppercase",
+                      selectedDays.length === 7 
+                        ? "bg-emerald-950/80 border-emerald-500 text-emerald-300" 
+                        : "bg-[#141414] border-[#262626] text-[#888] hover:text-white"
+                    )}
+                  >
+                    EVERYDAY
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDays([1, 2, 3, 4, 5])}
+                    className={cn(
+                      "px-2 py-0.5 rounded-sm border transition-colors font-bold uppercase",
+                      selectedDays.length === 5 && selectedDays.every(d => d >= 1 && d <= 5)
+                        ? "bg-cyan-950/80 border-cyan-500 text-cyan-300" 
+                        : "bg-[#141414] border-[#262626] text-[#888] hover:text-white"
+                    )}
+                  >
+                    MON-FRI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDays([0, 6])}
+                    className={cn(
+                      "px-2 py-0.5 rounded-sm border transition-colors font-bold uppercase",
+                      selectedDays.length === 2 && selectedDays.includes(0) && selectedDays.includes(6)
+                        ? "bg-amber-950/80 border-amber-500 text-amber-300" 
+                        : "bg-[#141414] border-[#262626] text-[#888] hover:text-white"
+                    )}
+                  >
+                    WEEKENDS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDays([])}
+                    className="px-2 py-0.5 rounded-sm border border-rose-900/50 bg-rose-950/30 text-rose-400 hover:bg-rose-900/40 text-[10px] font-mono uppercase"
+                  >
+                    UNCHECK ALL
+                  </button>
+                </div>
+
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {WEEKDAYS.map(d => {
                     const isSel = selectedDays.includes(d.value);
@@ -756,13 +926,29 @@ export function TimetableScheduleView() {
                         onClick={() => toggleDaySelection(d.value)}
                         className={cn(
                           "px-2.5 py-1 text-xs font-mono rounded-sm border uppercase transition-colors font-bold",
-                          isSel ? "bg-[#222] border-white text-white" : "bg-[#141414] border-[#262626] text-[#666]"
+                          isSel ? "bg-cyan-950/80 border-cyan-400 text-white" : "bg-[#141414] border-[#262626] text-[#666] hover:text-[#AAA]"
                         )}
                       >
                         {d.label}
                       </button>
                     );
                   })}
+                </div>
+
+                <div className="mt-2 text-[11px] font-mono flex items-center gap-1.5">
+                  {selectedDays.length === 0 ? (
+                    <span className="text-amber-400 bg-amber-950/50 border border-amber-800/50 px-2 py-0.5 rounded-sm">
+                      ℹ️ Unchecked all — Routine will repeat EVERY DAY by default.
+                    </span>
+                  ) : selectedDays.length === 7 ? (
+                    <span className="text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-2 py-0.5 rounded-sm font-bold">
+                      ✓ Repeats Every Single Day (Sun–Sat)
+                    </span>
+                  ) : (
+                    <span className="text-cyan-400 bg-cyan-950/50 border border-cyan-800/50 px-2 py-0.5 rounded-sm font-bold">
+                      ✓ Repeats on {getRecurrenceLabel(selectedDays).label} ({selectedDays.length} days/week)
+                    </span>
+                  )}
                 </div>
               </div>
 

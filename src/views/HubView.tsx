@@ -8,7 +8,7 @@ import {
   ChevronRight, LayoutGrid, Users, Zap, Terminal, Cpu, BrainCircuit
 } from 'lucide-react';
 import { cn, getRank } from '../lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export function HubView() {
   const { setView } = useStore();

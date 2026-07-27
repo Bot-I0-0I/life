@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { cn, getRank, RANK_TIERS } from '../lib/utils';
-import { Settings, User, Palette, Activity, Save, Upload, Download, Database, Trash2, Moon, Sun, AlertTriangle, Cloud, RefreshCw, Sparkles } from 'lucide-react';
+import { Settings, User, Palette, Activity, Save, Upload, Download, Database, Trash2, Moon, Sun, AlertTriangle, Cloud, RefreshCw, Sparkles, CheckCircle, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../AuthContext';
 import { useCloudSync } from '../useCloudSync';
@@ -11,6 +12,18 @@ import { ThemeGalleryModal } from '../components/ThemeGalleryModal';
 
 export function SettingsView() {
   const userStats = useLiveQuery(() => db.userStats.get(1));
+  
+  // Live counts for life tracking tables
+  const questsCount = useLiveQuery(() => db.quests.count()) || 0;
+  const dungeonsCount = useLiveQuery(() => db.dungeons.count()) || 0;
+  const vesselCount = useLiveQuery(() => db.vesselLogs.count()) || 0;
+  const ledgerCount = useLiveQuery(() => db.ledger.count()) || 0;
+  const nutritionCount = useLiveQuery(() => db.nutritionLogs.count()) || 0;
+  const timetableCount = useLiveQuery(() => db.timetable.count()) || 0;
+  const tasksCount = useLiveQuery(() => db.tasks.count()) || 0;
+  const missionCount = useLiveQuery(() => db.missionLogs.count()) || 0;
+  const totalDbRecords = questsCount + dungeonsCount + vesselCount + ledgerCount + nutritionCount + timetableCount + tasksCount + missionCount;
+
   const { theme, toggleTheme, showActiveQuestTicker, showAttributeProgressBars, showRadarChart, showMuscleFigurine, toggleHUDComponent } = useStore();
   const { user, isGuest } = useAuth();
   const { isSyncing, lastSync, forceSync } = useCloudSync();
@@ -159,61 +172,185 @@ export function SettingsView() {
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const data = JSON.parse(event.target?.result as string);
-          await db.transaction('rw', [db.userStats, db.quests, db.inventory, db.shopItems, db.vesselLogs, db.weeklyReviews, db.tasks, db.ledger, db.dungeons, db.nutritionLogs, db.tacticalLogs], async () => {
-            if (data.userStats) { await db.userStats.clear(); await db.userStats.bulkAdd(data.userStats); }
-            if (data.quests) { await db.quests.clear(); await db.quests.bulkAdd(data.quests); }
-            if (data.inventory) { await db.inventory.clear(); await db.inventory.bulkAdd(data.inventory); }
-            if (data.shopItems) { await db.shopItems.clear(); await db.shopItems.bulkAdd(data.shopItems); }
-            if (data.vesselLogs) { await db.vesselLogs.clear(); await db.vesselLogs.bulkAdd(data.vesselLogs); }
-            if (data.weeklyReviews) { await db.weeklyReviews.clear(); await db.weeklyReviews.bulkAdd(data.weeklyReviews); }
-            if (data.tasks) { await db.tasks.clear(); await db.tasks.bulkAdd(data.tasks); }
-            if (data.ledger) { await db.ledger.clear(); await db.ledger.bulkAdd(data.ledger); }
-            if (data.dungeons) { await db.dungeons.clear(); await db.dungeons.bulkAdd(data.dungeons); }
-            if (data.nutritionLogs) { await db.nutritionLogs.clear(); await db.nutritionLogs.bulkAdd(data.nutritionLogs); }
-            if (data.tacticalLogs) { await db.tacticalLogs.clear(); await db.tacticalLogs.bulkAdd(data.tacticalLogs); }
-          });
-          if (user) {
-            await forceSync();
-          }
-          alert('System data imported successfully!');
-          window.location.reload();
-        } catch (error) {
-          console.error('Import failed', error);
-          alert('Failed to import data. Invalid format.');
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const rawContent = event.target?.result as string;
+        const data = JSON.parse(rawContent);
+
+        if (!data || typeof data !== 'object') {
+          throw new Error("Invalid or empty JSON structure.");
         }
-      };
-      reader.readAsText(file);
-    }
+
+        const validKeys = [
+          'userStats', 'quests', 'dungeons', 'inventory', 'shopItems', 
+          'vesselLogs', 'weeklyReviews', 'tasks', 'ledger', 'nutritionLogs', 
+          'tacticalLogs', 'foodTemplates', 'questTemplates', 'missionLogs', 
+          'systemLogs', 'timetable'
+        ];
+
+        const containsData = validKeys.some(key => Array.isArray(data[key]));
+        if (!containsData) {
+          throw new Error("Unrecognized backup format. File must contain life-tracking tables.");
+        }
+
+        let restoredItemsCount = 0;
+
+        await db.transaction('rw', [
+          db.userStats, db.quests, db.dungeons, db.inventory, db.shopItems,
+          db.vesselLogs, db.weeklyReviews, db.tasks, db.ledger, db.nutritionLogs,
+          db.tacticalLogs, db.foodTemplates, db.questTemplates, db.missionLogs,
+          db.systemLogs, db.timetable
+        ], async () => {
+          if (Array.isArray(data.userStats) && data.userStats.length > 0) { 
+            await db.userStats.clear(); 
+            await db.userStats.bulkAdd(data.userStats); 
+            restoredItemsCount += data.userStats.length;
+          }
+          if (Array.isArray(data.quests)) { 
+            await db.quests.clear(); 
+            if (data.quests.length > 0) await db.quests.bulkAdd(data.quests); 
+            restoredItemsCount += data.quests.length;
+          }
+          if (Array.isArray(data.inventory)) { 
+            await db.inventory.clear(); 
+            if (data.inventory.length > 0) await db.inventory.bulkAdd(data.inventory); 
+            restoredItemsCount += data.inventory.length;
+          }
+          if (Array.isArray(data.shopItems)) { 
+            await db.shopItems.clear(); 
+            if (data.shopItems.length > 0) await db.shopItems.bulkAdd(data.shopItems); 
+            restoredItemsCount += data.shopItems.length;
+          }
+          if (Array.isArray(data.vesselLogs)) { 
+            await db.vesselLogs.clear(); 
+            if (data.vesselLogs.length > 0) await db.vesselLogs.bulkAdd(data.vesselLogs); 
+            restoredItemsCount += data.vesselLogs.length;
+          }
+          if (Array.isArray(data.weeklyReviews)) { 
+            await db.weeklyReviews.clear(); 
+            if (data.weeklyReviews.length > 0) await db.weeklyReviews.bulkAdd(data.weeklyReviews); 
+            restoredItemsCount += data.weeklyReviews.length;
+          }
+          if (Array.isArray(data.tasks)) { 
+            await db.tasks.clear(); 
+            if (data.tasks.length > 0) await db.tasks.bulkAdd(data.tasks); 
+            restoredItemsCount += data.tasks.length;
+          }
+          if (Array.isArray(data.ledger)) { 
+            await db.ledger.clear(); 
+            if (data.ledger.length > 0) await db.ledger.bulkAdd(data.ledger); 
+            restoredItemsCount += data.ledger.length;
+          }
+          if (Array.isArray(data.dungeons)) { 
+            await db.dungeons.clear(); 
+            if (data.dungeons.length > 0) await db.dungeons.bulkAdd(data.dungeons); 
+            restoredItemsCount += data.dungeons.length;
+          }
+          if (Array.isArray(data.nutritionLogs)) { 
+            await db.nutritionLogs.clear(); 
+            if (data.nutritionLogs.length > 0) await db.nutritionLogs.bulkAdd(data.nutritionLogs); 
+            restoredItemsCount += data.nutritionLogs.length;
+          }
+          if (Array.isArray(data.tacticalLogs)) { 
+            await db.tacticalLogs.clear(); 
+            if (data.tacticalLogs.length > 0) await db.tacticalLogs.bulkAdd(data.tacticalLogs); 
+            restoredItemsCount += data.tacticalLogs.length;
+          }
+          if (Array.isArray(data.foodTemplates)) { 
+            await db.foodTemplates.clear(); 
+            if (data.foodTemplates.length > 0) await db.foodTemplates.bulkAdd(data.foodTemplates); 
+            restoredItemsCount += data.foodTemplates.length;
+          }
+          if (Array.isArray(data.questTemplates)) { 
+            await db.questTemplates.clear(); 
+            if (data.questTemplates.length > 0) await db.questTemplates.bulkAdd(data.questTemplates); 
+            restoredItemsCount += data.questTemplates.length;
+          }
+          if (Array.isArray(data.missionLogs)) { 
+            await db.missionLogs.clear(); 
+            if (data.missionLogs.length > 0) await db.missionLogs.bulkAdd(data.missionLogs); 
+            restoredItemsCount += data.missionLogs.length;
+          }
+          if (Array.isArray(data.systemLogs)) { 
+            await db.systemLogs.clear(); 
+            if (data.systemLogs.length > 0) await db.systemLogs.bulkAdd(data.systemLogs); 
+            restoredItemsCount += data.systemLogs.length;
+          }
+          if (Array.isArray(data.timetable)) { 
+            await db.timetable.clear(); 
+            if (data.timetable.length > 0) await db.timetable.bulkAdd(data.timetable); 
+            restoredItemsCount += data.timetable.length;
+          }
+        });
+
+        if (user) {
+          await forceSync();
+        }
+
+        toast.success(`Successfully restored backup (${restoredItemsCount} records updated across tables)! Reloading...`);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } catch (error: any) {
+        console.error('Import failed', error);
+        toast.error(`Import failed: ${error?.message || 'Invalid JSON format'}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetText, setResetText] = useState('');
 
   const handleExport = async () => {
-    const data = {
-      userStats: await db.userStats.toArray(),
-      quests: await db.quests.toArray(),
-      dungeons: await db.dungeons.toArray(),
-      inventory: await db.inventory.toArray(),
-      shopItems: await db.shopItems.toArray(),
-      vesselLogs: await db.vesselLogs.toArray(),
-      weeklyReviews: await db.weeklyReviews.toArray(),
-      tasks: await db.tasks.toArray(),
-      ledger: await db.ledger.toArray(),
-      nutritionLogs: await db.nutritionLogs.toArray(),
-      tacticalLogs: await db.tacticalLogs.toArray(),
-    };
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'system_backup.json';
-    a.click();
+    try {
+      const exportData = {
+        meta: {
+          app: "SOLO SYSTEM LIFE TRACKER",
+          version: "1.0",
+          exportedAt: new Date().toISOString(),
+          recordCount: totalDbRecords
+        },
+        userStats: await db.userStats.toArray(),
+        quests: await db.quests.toArray(),
+        dungeons: await db.dungeons.toArray(),
+        inventory: await db.inventory.toArray(),
+        shopItems: await db.shopItems.toArray(),
+        vesselLogs: await db.vesselLogs.toArray(),
+        weeklyReviews: await db.weeklyReviews.toArray(),
+        tasks: await db.tasks.toArray(),
+        ledger: await db.ledger.toArray(),
+        nutritionLogs: await db.nutritionLogs.toArray(),
+        tacticalLogs: await db.tacticalLogs.toArray(),
+        foodTemplates: await db.foodTemplates.toArray(),
+        questTemplates: await db.questTemplates.toArray(),
+        missionLogs: await db.missionLogs.toArray(),
+        systemLogs: await db.systemLogs.toArray(),
+        timetable: await db.timetable.toArray(),
+      };
+
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const filenameStr = `system_life_backup_${format(new Date(), 'yyyy-MM-dd_HHmm')}.json`;
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filenameStr;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${totalDbRecords} records to ${filenameStr}`);
+    } catch (err: any) {
+      console.error("Export error:", err);
+      toast.error("Failed to export backup file.");
+    }
   };
 
   const handleReset = async () => {
@@ -770,27 +907,72 @@ export function SettingsView() {
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2" style={{ borderColor: themeColor }}></div>
               <h3 className="text-xl font-mono text-white flex items-center border-b border-[#262626] pb-4 font-bold tracking-widest uppercase">
                 <Database className="w-5 h-5 mr-2" style={{ color: themeColor }} />
-                DATA MANAGEMENT
+                DATA BACKUP & RESTORE
               </h3>
-              <p className="text-[10px] text-[#A3A3A3] font-mono tracking-widest uppercase">Backup your local database or restore from a previous backup.</p>
+              <p className="text-[10px] text-[#A3A3A3] font-mono tracking-widest uppercase">
+                Export your entire life-tracking database as a JSON file or restore from a previous local backup.
+              </p>
+
+              {/* Database Record Summary Badges */}
+              <div className="bg-[#141414] border border-[#262626] p-3.5 rounded-sm space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider border-b border-[#222] pb-1.5">
+                  <span className="text-[#A3A3A3] font-bold">STORED LIFE TRACKING DATA</span>
+                  <span className="text-emerald-400 font-bold">{totalDbRecords} TOTAL RECORDS</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">QUESTS</div>
+                    <div className="text-white font-bold">{questsCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">TIMETABLE</div>
+                    <div className="text-cyan-400 font-bold">{timetableCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">NUTRITION</div>
+                    <div className="text-emerald-400 font-bold">{nutritionCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">FINANCE</div>
+                    <div className="text-amber-400 font-bold">{ledgerCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">VESSEL LOGS</div>
+                    <div className="text-indigo-400 font-bold">{vesselCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">TASKS</div>
+                    <div className="text-purple-400 font-bold">{tasksCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">DUNGEONS</div>
+                    <div className="text-rose-400 font-bold">{dungeonsCount}</div>
+                  </div>
+                  <div className="bg-[#0A0A0A] p-2 border border-[#222] rounded-sm">
+                    <div className="text-[#888]">MISSIONS</div>
+                    <div className="text-yellow-400 font-bold">{missionCount}</div>
+                  </div>
+                </div>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
                   onClick={handleExport}
-                  className="flex-1 bg-[#141414] border border-[#262626] hover:bg-[#1A1A1A] text-white px-4 py-3 rounded-sm font-mono text-xs font-bold tracking-widest uppercase transition-colors flex items-center justify-center"
+                  className="flex-1 bg-[#141414] border border-[#262626] hover:bg-[#1A1A1A] hover:border-emerald-500/50 text-white px-4 py-3.5 rounded-sm font-mono text-xs font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-2 group"
                 >
-                  <Download className="w-4 h-4 mr-2" /> EXPORT SYSTEM DATA
+                  <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" /> EXPORT JSON BACKUP
                 </button>
+
                 <div className="flex-1 relative">
                   <input 
                     type="file" 
                     accept=".json" 
                     onChange={handleImport}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    title="Import System Data"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    title="Import JSON Backup file"
                   />
-                  <button className="w-full bg-[#141414] border border-[#262626] hover:bg-[#1A1A1A] text-white px-4 py-3 rounded-sm font-mono text-xs font-bold tracking-widest uppercase transition-colors flex items-center justify-center">
-                    <Upload className="w-4 h-4 mr-2" /> IMPORT SYSTEM DATA
+                  <button className="w-full bg-[#141414] border border-[#262626] hover:bg-[#1A1A1A] hover:border-cyan-500/50 text-white px-4 py-3.5 rounded-sm font-mono text-xs font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-2 group">
+                    <Upload className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" /> RESTORE FROM JSON
                   </button>
                 </div>
               </div>

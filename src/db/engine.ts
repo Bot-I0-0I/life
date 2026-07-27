@@ -36,6 +36,14 @@ export function useSystemEngine() {
         if (newQuests.length > 0) {
            await db.quests.bulkAdd(newQuests as any);
         }
+
+        // Reset timetable recurring completion status for the new day
+        const allTimetableBlocks = await db.timetable.toArray();
+        for (const block of allTimetableBlocks) {
+          if (block.id && block.lastCompletedDate !== today) {
+            await db.timetable.update(block.id, { completedToday: false });
+          }
+        }
       }
 
       // Weekly Review Logic
