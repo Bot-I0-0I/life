@@ -16,6 +16,7 @@ import {
   WorkoutDayItem, 
   WorkoutPlanItem,
   enrichExercise,
+  scaleExerciseForWeek,
   MASTER_EXERCISE_GUIDES
 } from '../data/workoutPrograms';
 
@@ -52,6 +53,9 @@ export function TrainingView() {
 
   // Week Selector State for Long-Term Programs (1 to 2 Months)
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
+
+  // Fitness Experience Level State for Progressive Load Customization
+  const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
   // Sync state automatically when userStats or latestVessel changes
   useEffect(() => {
@@ -283,13 +287,14 @@ export function TrainingView() {
     setIsWorkoutActive(true);
     setIsResting(false);
 
-    // Initialize set tracker
+    // Initialize set tracker with progressive week and experience level scaling
     const initialSets: Record<number, Array<{ weight: number; reps: number; completed: boolean }>> = {};
     dayToRun.exercises.forEach((ex, idx) => {
-      const numSets = ex.defaultSets || 3;
+      const scaledEx = scaleExerciseForWeek(ex, selectedWeek, experienceLevel);
+      const numSets = scaledEx.scaledSets || 3;
       initialSets[idx] = Array.from({ length: numSets }, () => ({
         weight: 0,
-        reps: ex.targetReps || 10,
+        reps: scaledEx.scaledReps || 10,
         completed: false
       }));
     });
@@ -917,12 +922,43 @@ export function TrainingView() {
             )}
           </div>
 
-          {/* WEEK SELECTOR BAR FOR SUSTAINED 1 TO 2 MONTH PROGRESSION */}
-          <div className="space-y-2 bg-[#121212] p-3 rounded-sm border border-[#262626]">
-            <div className="flex items-center justify-between">
+          {/* WEEK SELECTOR & EXPERIENCE LEVEL BAR FOR PROGRESSIVE LONG-TERM SCALING */}
+          <div className="space-y-3 bg-[#121212] p-3.5 rounded-sm border border-[#262626]">
+            {/* Experience Level Selector */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#222] pb-2.5">
+              <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Target className="w-4 h-4 text-cyan-400" />
+                STARTING FITNESS DIFFICULTY:
+              </span>
+              <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                {(['beginner', 'intermediate', 'advanced'] as const).map((lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => setExperienceLevel(lvl)}
+                    className={cn(
+                      "flex-1 sm:flex-initial px-3 py-1 text-xs font-mono font-bold uppercase rounded-sm border transition-all",
+                      experienceLevel === lvl
+                        ? lvl === 'beginner' 
+                          ? "bg-emerald-500 text-black border-emerald-400"
+                          : lvl === 'intermediate'
+                          ? "bg-cyan-500 text-black border-cyan-400"
+                          : "bg-amber-500 text-black border-amber-400"
+                        : "bg-[#1A1A1A] border-[#333] text-[#A3A3A3] hover:text-white"
+                    )}
+                  >
+                    {lvl === 'beginner' && '🌱 BEGINNER (ACCESSIBLE START)'}
+                    {lvl === 'intermediate' && '⚡ INTERMEDIATE'}
+                    {lvl === 'advanced' && '🔥 ADVANCED'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Week Stepper Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 pt-1">
               <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-emerald-400" />
-                LONG-TERM TRAINING WEEK (SUSTAINED PROGRESSION):
+                PROGRESSIVE OVERLOAD WEEK:
               </span>
               <span className="text-[11px] font-mono text-[#A3A3A3] uppercase">
                 WEEK {selectedWeek} OF {currentSelectedPlan.durationWeeks || 8}
@@ -935,13 +971,15 @@ export function TrainingView() {
                   key={w}
                   onClick={() => setSelectedWeek(w)}
                   className={cn(
-                    "px-3 py-1 text-xs font-mono font-bold uppercase rounded-sm border transition-all",
+                    "px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-sm border transition-all flex items-center gap-1",
                     selectedWeek === w
                       ? "bg-emerald-500 text-black border-emerald-400"
                       : "bg-[#1A1A1A] border-[#333] text-[#A3A3A3] hover:text-white"
                   )}
                 >
-                  WEEK {w}
+                  <span>WK {w}</span>
+                  {w === 1 && <span className="text-[9px] opacity-80">(Entry)</span>}
+                  {w === 8 && <span className="text-[9px] opacity-80">(Peak)</span>}
                 </button>
               ))}
             </div>
@@ -1003,18 +1041,18 @@ export function TrainingView() {
                 </button>
               </div>
 
-              {/* Exercise Cards List with Execution Guide Button */}
+              {/* Exercise Cards List with Progressive Overload Details */}
               <div className="space-y-3">
                 <span className="text-xs font-mono text-[#A3A3A3] uppercase block">
-                  EXERCISES IN THIS SESSION ({currentSelectedDay.exercises.length} EXERCISES):
+                  EXERCISES IN THIS SESSION ({currentSelectedDay.exercises.length} EXERCISES • WEEK {selectedWeek} SCALED):
                 </span>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentSelectedDay.exercises.map((exRaw, exIdx) => {
-                    const ex = enrichExercise(exRaw);
+                    const ex = scaleExerciseForWeek(exRaw, selectedWeek, experienceLevel);
                     return (
                       <div key={exIdx} className="bg-[#181818] border border-[#262626] p-3.5 rounded-sm space-y-2 min-w-0 flex flex-col justify-between">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex justify-between items-start gap-2">
                             <span className="text-xs font-mono font-bold text-white uppercase truncate">{ex.name}</span>
                             <span className="px-2 py-0.5 bg-cyan-950/60 text-cyan-300 text-[10px] font-mono rounded-sm border border-cyan-900/50 uppercase flex-shrink-0">
@@ -1023,14 +1061,25 @@ export function TrainingView() {
                           </div>
 
                           <div className="text-[11px] font-mono text-[#A3A3A3] flex items-center justify-between pt-1">
-                            <span>SETS: {ex.defaultSets || 3} × {ex.targetReps || 10} REPS</span>
+                            <span className="text-emerald-400 font-bold">SETS: {ex.scaledSets} × {ex.scaledReps} REPS</span>
                             <span>~{ex.calories} KCAL</span>
                           </div>
 
-                          {ex.category && (
-                            <span className="inline-block px-1.5 py-0.5 bg-[#222] text-[#AAA] text-[9px] font-mono uppercase rounded-sm">
-                              PHASE: {ex.category}
+                          <div className="flex flex-wrap gap-1">
+                            <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[9px] font-mono uppercase rounded-sm">
+                              {ex.weekPhaseLabel}
                             </span>
+                            {ex.category && (
+                              <span className="px-1.5 py-0.5 bg-[#222] text-[#AAA] text-[9px] font-mono uppercase rounded-sm">
+                                {ex.category}
+                              </span>
+                            )}
+                          </div>
+
+                          {ex.regressionTip && (
+                            <div className="p-2 bg-[#121212] border border-[#222] rounded-sm text-[10px] font-mono text-amber-300/90 leading-relaxed">
+                              🌱 <strong>Beginner Alternative:</strong> {ex.regressionTip}
+                            </div>
                           )}
                         </div>
 
@@ -1039,7 +1088,7 @@ export function TrainingView() {
                           onClick={() => setGuideExercise(ex)}
                           className="w-full py-1.5 bg-[#222] hover:bg-cyan-950 border border-[#333] hover:border-cyan-500 text-cyan-300 text-[11px] font-mono font-bold uppercase rounded-sm transition-all flex items-center justify-center gap-1.5 mt-2"
                         >
-                          <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> VIEW STEP-BY-STEP FORM GUIDE
+                          <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> VIEW FORM & REGRESSION GUIDE
                         </button>
                       </div>
                     );
@@ -1123,7 +1172,7 @@ export function TrainingView() {
               {/* List of Exercises for the Day */}
               <div className="space-y-4">
                 {activeDay?.exercises.map((exRaw, exIdx) => {
-                  const ex = enrichExercise(exRaw);
+                  const ex = scaleExerciseForWeek(exRaw, selectedWeek, experienceLevel);
                   const sets = completedSets[exIdx] || [];
 
                   return (
