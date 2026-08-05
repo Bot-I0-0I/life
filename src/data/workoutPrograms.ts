@@ -8,6 +8,16 @@ export interface ExerciseItem {
   details?: string;
   defaultSets?: number;
   targetReps?: number;
+  // Enhanced execution & form guidance fields
+  executionSteps?: string[];
+  formTips?: string[];
+  commonMistakes?: string[];
+  targetMuscles?: string[];
+  tempo?: string;
+  restTime?: string;
+  category?: 'Warm-Up' | 'Primary Compound' | 'Accessory' | 'Finisher' | 'Mobility';
+  regressionTip?: string;
+  progressionTip?: string;
 }
 
 export interface WorkoutDayItem {
@@ -22,1404 +32,853 @@ export interface WorkoutPlanItem {
   name: string;
   area: string;
   tag: string;
-  equipment: string;
-  description: string;
+  equipment: string; // 'No Equipment' | 'Dumbbells' | 'Barbell / Dumbbell / Gym' | 'Low Impact / Machines / Bands'
   targetGoal: 'fat_loss' | 'muscle_gain' | 'strength' | 'calisthenics' | 'joint_care';
   recommendedBodyType: string;
   compatibilityNote: string;
+  description: string;
+  durationWeeks?: number; // 4 or 8 weeks
+  daysPerWeek?: number;
   days: WorkoutDayItem[];
 }
 
+// Master execution guide dictionary for seamless step-by-step form instructions & smart coaching
+export const MASTER_EXERCISE_GUIDES: Record<string, {
+  executionSteps: string[];
+  formTips: string[];
+  commonMistakes: string[];
+  targetMuscles: string[];
+  tempo: string;
+  restTime: string;
+  category: 'Warm-Up' | 'Primary Compound' | 'Accessory' | 'Finisher' | 'Mobility';
+  regressionTip: string;
+  progressionTip: string;
+}> = {
+  'STANDARD FLOOR PUSHUPS': {
+    executionSteps: [
+      '1. High Plank Setup: Place hands on floor slightly wider than shoulder-width, palms flat, fingers pointing slightly outward.',
+      '2. Core & Spine Lock: Engage glutes and brace abdominal wall so your body forms a rigid straight line from head to heels.',
+      '3. Controlled Descent: Inhale and lower chest until 1-2 inches above the floor while tucking elbows back at a 45° angle.',
+      '4. Explosive Press: Exhale and press through your palms to lock arms back out at peak height.'
+    ],
+    formTips: [
+      'Keep glutes tight to prevent your lower back from sagging.',
+      'Maintain a neutral neck by staring at a spot 6 inches ahead of your hands.'
+    ],
+    commonMistakes: [
+      'Flaring elbows outward at a 90° angle (overstresses shoulder joints).',
+      'Dropping hips first or letting your chin touch before your chest.'
+    ],
+    targetMuscles: ['Chest (Pectoralis Major)', 'Anterior Deltoids', 'Triceps Brachii', 'Core Stabilizers'],
+    tempo: '2s down - 1s pause - 1s up',
+    restTime: '60-90 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Lower knees to the floor or elevate hands onto a bench or sturdy table.',
+    progressionTip: 'Elevate feet on a chair (Decline Pushups) or add a 2-second pause at the bottom.'
+  },
+  'DIAMOND TRICEP PUSHUPS': {
+    executionSteps: [
+      '1. Setup: Place hands close together directly beneath chest, forming a diamond shape with index fingers and thumbs.',
+      '2. Descent: Lower your chest towards the diamond while keeping elbows pinned close to your ribcage.',
+      '3. Press: Squeeze your triceps intensely and drive back up to full elbow extension.'
+    ],
+    formTips: ['Keep elbows tucked right beside ribs to isolate tricep lateral heads.', 'If too challenging on floor, elevate hands onto a bench.'],
+    commonMistakes: ['Flaring elbows wide.', 'Arching lower back.'],
+    targetMuscles: ['Triceps Brachii', 'Inner Chest', 'Anterior Deltoid'],
+    tempo: '2s down - 1s pause - 1s up',
+    restTime: '60 seconds',
+    category: 'Accessory',
+    regressionTip: 'Perform on knees or separate hands to narrow-grip width (4-6 inches apart).',
+    progressionTip: 'Elevate feet or perform with a single-leg raised in mid-air.'
+  },
+  'PIKE PUSHUPS (SHOULDER PRESS)': {
+    executionSteps: [
+      '1. Setup: Begin in pushup stance, then walk feet forward while raising hips high into an inverted V-shape.',
+      '2. Tripod Descent: Bend elbows to lower top of forehead diagonally forward towards floor in front of hands.',
+      '3. Press Back: Push back diagonally up through your shoulders to return to the apex inverted V position.'
+    ],
+    formTips: ['Look back towards your feet at top of rep to keep neck safe.', 'Rise up on toes to shift maximum load to shoulder deltoids.'],
+    commonMistakes: ['Bending knees excessively.', 'Lowering head straight down between hands instead of forward.'],
+    targetMuscles: ['Anterior & Lateral Deltoids', 'Upper Chest', 'Triceps', 'Upper Traps'],
+    tempo: '2s down - 1s pause - 1s up',
+    restTime: '60-90 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Bend knees slightly or move hands further forward to reduce hip angle.',
+    progressionTip: 'Elevate feet onto a chair or box to increase inverted vertical shoulder load.'
+  },
+  'EXPLOSIVE AIR SQUATS': {
+    executionSteps: [
+      '1. Stance: Stand with feet shoulder-width apart, toes pointing slightly outward (15-20°).',
+      '2. Hinge & Sit: Initiate by pushing hips back and bending knees, lowering until thigh crease drops below top of knees.',
+      '3. Stand & Squeeze: Drive firmly through your mid-foot and heels to stand up, squeezing glutes tightly at top.'
+    ],
+    formTips: ['Keep chest up and gaze straight ahead.', 'Ensure knees track in direction of your toes throughout the movement.'],
+    commonMistakes: ['Heels lifting off ground.', 'Knees collapsing inward (valgus collapse).'],
+    targetMuscles: ['Quadriceps', 'Gluteus Maximus', 'Hamstrings', 'Calves'],
+    tempo: '2s down - 1s hold - 1s explosive up',
+    restTime: '60 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Perform sit-to-stand squats onto a chair or shorten depth to parallel.',
+    progressionTip: 'Add a 3-second pause at bottom depth or convert to explosive Jump Squats.'
+  },
+  'PLYOMETRIC JUMP LUNGES': {
+    executionSteps: [
+      '1. Setup: Step forward into a lunge with both front and back knees bent at 90° angles.',
+      '2. Jump Explosively: Drive off floor explosively with both feet, swinging arms for momentum as you launch into air.',
+      '3. Mid-Air Switch: Switch leg positions in mid-air, landing softly into a lunge on opposite side.'
+    ],
+    formTips: ['Land smoothly on mid-foot to absorb impact.', 'Keep torso upright and core braced.'],
+    commonMistakes: ['Banging back knee hard on floor.', 'Leaning torso excessively forward.'],
+    targetMuscles: ['Quadriceps', 'Hamstrings', 'Glutes', 'Calves', 'Cardio system'],
+    tempo: 'Explosive continuous jumps',
+    restTime: '60-90 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Replace jumps with fast non-jumping alternating reverse lunges.',
+    progressionTip: 'Increase jump height or pause 1 second in bottom lunge position before jumping.'
+  },
+  'ISOMETRIC WALL SITS': {
+    executionSteps: [
+      '1. Setup: Lean back flat against a wall and slide down until your knees are bent at a 90° angle.',
+      '2. Alignment: Ensure thighs are parallel to floor and shins are vertical directly over ankles.',
+      '3. Hold: Hold your back flat against wall, hands off thighs, breathing steadily.'
+    ],
+    formTips: ['Press lower back flush against wall.', 'Rest hands on chest or at sides, never on legs.'],
+    commonMistakes: ['Sliding too high above 90°.', 'Resting hands on knees to relieve weight.'],
+    targetMuscles: ['Quadriceps', 'Gluteus Medius', 'Core'],
+    tempo: 'Static isometric hold',
+    restTime: '45-60 seconds',
+    category: 'Accessory',
+    regressionTip: 'Slide up slightly to a 100-110° knee angle.',
+    progressionTip: 'Perform single-leg wall sit alternating every 15 seconds.'
+  },
+  'CHAIR / BENCH TRICEP DIPS': {
+    executionSteps: [
+      '1. Setup: Sit on edge of a sturdy chair or bed, place palms beside hips, extend legs forward.',
+      '2. Descent: Slide hips off edge and lower body vertically until upper arms are parallel to floor (90° elbow bend).',
+      '3. Press: Press through palms to fully extend arms and squeeze triceps at top.'
+    ],
+    formTips: ['Keep your spine close to the chair edge throughout movement.', 'Avoid dipping below 90° to protect shoulder capsules.'],
+    commonMistakes: ['Drifting body far forward away from bench.', 'Shrugging shoulders up to ears.'],
+    targetMuscles: ['Triceps Brachii', 'Lower Pectorals', 'Anterior Deltoids'],
+    tempo: '2s down - 1s pause - 1s up',
+    restTime: '60 seconds',
+    category: 'Accessory',
+    regressionTip: 'Bend knees at 90° with feet flat on floor to reduce bodyweight load.',
+    progressionTip: 'Elevate feet onto a second chair in front of you.'
+  },
+  'HOLLOW BODY COMPRESSION HOLDS': {
+    executionSteps: [
+      '1. Setup: Lie face up on mat with legs straight and arms extended overhead.',
+      '2. Engage: Flatten lower back into mat, then lift shoulder blades and feet 4-6 inches off floor.',
+      '3. Hold: Maintain a tight banana-like curved body position while breathing steadily.'
+    ],
+    formTips: ['If lower back arches, lift legs higher or bring arms to sides.', 'Press belly button down into floor.'],
+    commonMistakes: ['Arching lumbar spine off floor.', 'Tucking chin into chest excessively.'],
+    targetMuscles: ['Rectus Abdominis', 'Transverse Abdominis', 'Hip Flexors'],
+    tempo: 'Static compression hold',
+    restTime: '45 seconds',
+    category: 'Finisher',
+    regressionTip: 'Tuck knees to chest or extend arms forward beside thighs.',
+    progressionTip: 'Add gentle hollow body rocking back and forth without losing spinal curve.'
+  },
+  'RAPID MOUNTAIN CLIMBERS': {
+    executionSteps: [
+      '1. Setup: Assume a high plank position with wrists directly under shoulders and body straight.',
+      '2. Knee Drive: Drive right knee toward chest without letting hips rise or bounce.',
+      '3. Rapid Switch: Quickly extend right leg back while simultaneously driving left knee to chest in running motion.'
+    ],
+    formTips: ['Keep shoulders stacked directly over hands.', 'Maintain constant core tension.'],
+    commonMistakes: ['Piking hips up in air.', 'Sagging lower back.'],
+    targetMuscles: ['Core / Abs', 'Hip Flexors', 'Shoulder Girdle', 'Cardio'],
+    tempo: 'Rapid high frequency',
+    restTime: '45-60 seconds',
+    category: 'Finisher',
+    regressionTip: 'Perform slow, controlled step-ins without jumping switch.',
+    progressionTip: 'Drive knees cross-body toward opposite elbow (Cross-Body Climbers).'
+  },
+  'FULL BODY BURPEE SPRINTS': {
+    executionSteps: [
+      '1. Setup: Stand tall with feet hip-width apart.',
+      '2. Drop: Bend knees, plant hands flat on floor, and kick feet back into a plank position.',
+      '3. Pushup & Hop: Lower chest to floor, push up, jump feet forward near hands, and jump explosively overhead with a hand clap.'
+    ],
+    formTips: ['Pace yourself smoothly for continuous reps.', 'Land softly on mid-foot.'],
+    commonMistakes: ['Sagging back during plank kick-back.', 'Skipping the vertical jump.'],
+    targetMuscles: ['Full Body', 'Quadriceps', 'Chest', 'Core', 'Cardiovascular System'],
+    tempo: 'Fluid explosive motion',
+    restTime: '60-90 seconds',
+    category: 'Finisher',
+    regressionTip: 'Step feet back one at a time without chest-to-floor pushup.',
+    progressionTip: 'Perform tuck-jump at peak or add a double pushup at bottom.'
+  },
+  'ASSISTED PISTOL SQUAT PROGRESSION': {
+    executionSteps: [
+      '1. Setup: Stand on one leg in front of a doorframe, pole, or chair for light balance support.',
+      '2. Extend Leg: Extend non-working leg straight out in front off floor.',
+      '3. Deep Single-Leg Squat: Lower hips back down smoothly on working leg until thigh passes horizontal.',
+      '4. Drive Up: Press through mid-foot and heel to return to standing position.'
+    ],
+    formTips: ['Use doorframe for minimal guidance, force working leg to bear 90% of load.', 'Keep working heel grounded throughout rep.'],
+    commonMistakes: ['Lifting working heel off floor.', 'Pulling excessively with upper body.'],
+    targetMuscles: ['Quadriceps', 'Gluteus Maximus', 'Hamstrings', 'Ankle Stabilizers', 'Core'],
+    tempo: '3s down - 1s pause - 1s up',
+    restTime: '60-90 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Squat down onto a high chair seat or box single-legged.',
+    progressionTip: 'Release hands completely for full unassisted Pistol Squat.'
+  },
+  'DOORWAY BODYWEIGHT ROWS': {
+    executionSteps: [
+      '1. Setup: Stand inside a doorway, grip both sides of doorframe at chest level with feet near base.',
+      '2. Lean Back: Extend arms fully and lean back so body hangs at a 45° angle.',
+      '3. Pull & Squeeze: Pull chest forward between doorframe by driving elbows back and squeezing shoulder blades.',
+      '4. Lower: Slowly extend arms under 2-3 second control back to starting hang.'
+    ],
+    formTips: ['Keep body straight as a board from head to heels.', 'Incorporate a 1-second squeeze at peak contraction.'],
+    commonMistakes: ['Bending hips or sagging glutes.', 'Pulling with wrists instead of back lats.'],
+    targetMuscles: ['Latissimus Dorsi', 'Rhomboids', 'Rear Deltoids', 'Biceps', 'Core'],
+    tempo: '2s down - 1s pause - 1s up',
+    restTime: '60 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Walk feet slightly backwards to stand more upright and lighten resistance.',
+    progressionTip: 'Walk feet further forward beneath doorframe to steepen body angle.'
+  },
+  'PLANK-TO-PUSHUP COMMANDOS': {
+    executionSteps: [
+      '1. Setup: Begin in a forearm plank position with elbows under shoulders.',
+      '2. Up Phase: Press right hand onto floor, then left hand, pushing up into a full hand plank.',
+      '3. Down Phase: Lower right forearm back to floor, followed by left forearm to return to forearm plank.',
+      '4. Alternate: Repeat while alternating starting arm each rep.'
+    ],
+    formTips: ['Minimize hip twisting by bracing glutes and abs hard.', 'Keep palms directly under shoulders.'],
+    commonMistakes: ['Excessive rocking hips side to side.', 'Piking hips in air.'],
+    targetMuscles: ['Triceps', 'Anterior Deltoids', 'Chest', 'Core Stabilizers'],
+    tempo: 'Smooth continuous motion',
+    restTime: '60 seconds',
+    category: 'Accessory',
+    regressionTip: 'Perform commandos with knees resting on floor.',
+    progressionTip: 'Pause in forearm plank for 2 seconds between each up-down rep.'
+  },
+  'SKATER HOP LATERAL JUMPS': {
+    executionSteps: [
+      '1. Setup: Stand on right leg with knee slightly bent.',
+      '2. Lateral Bound: Bound laterally to the left, landing softly on left foot while sweeping right leg behind.',
+      '3. Reverse Bound: Immediately push off left foot and bound back to right leg.',
+      '4. Rhythm: Swing arms naturally to maintain speed and lateral balance.'
+    ],
+    formTips: ['Land softly on mid-foot with knee bent to absorb impact.', 'Keep chest upright.'],
+    commonMistakes: ['Landing stiff-legged.', 'Stumbling or losing balance.'],
+    targetMuscles: ['Gluteus Medius', 'Quadriceps', 'Calves', 'Ankle Stabilizers', 'Cardio'],
+    tempo: 'Explosive lateral jumps',
+    restTime: '45-60 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Perform lateral side-steps without explosive flight time.',
+    progressionTip: 'Increase lateral jump distance or touch ground with hand on each landing.'
+  },
+  'BEAR CRAWL ISOMETRIC HOLDS': {
+    executionSteps: [
+      '1. Setup: Begin on hands and knees with wrists directly under shoulders and knees under hips.',
+      '2. Lift Knees: Tuck toes and hover knees 1-2 inches above the floor.',
+      '3. Rigid Hold: Hold position with flat back, braced abs, and knees hovering without touching floor.'
+    ],
+    formTips: ['Keep back completely flat like a tabletop.', 'Breathe deeply through nose into abdomen.'],
+    commonMistakes: ['Raising hips too high.', 'Letting lower back arch down.'],
+    targetMuscles: ['Transverse Abdominis', 'Quadriceps', 'Shoulder Girdle', 'Serratus Anterior'],
+    tempo: 'Static isometric hold',
+    restTime: '45 seconds',
+    category: 'Accessory',
+    regressionTip: 'Rest knees briefly on floor every 5 seconds.',
+    progressionTip: 'Crawl forward 3 paces and backward 3 paces while keeping knees hovering.'
+  },
+  'V-UP ABDOMINAL CRUNCHES': {
+    executionSteps: [
+      '1. Setup: Lie face up on floor with legs extended straight and arms extended overhead.',
+      '2. Explosive Lift: Simultaneously lift torso and legs off floor, reaching hands towards toes to form a "V" shape.',
+      '3. Controlled Lower: Lower body back down under control without letting heels or shoulders touch floor.'
+    ],
+    formTips: ['Exhale sharply as you reach top "V" position.', 'Keep legs as straight as mobility allows.'],
+    commonMistakes: ['Using swinging momentum.', 'Bending knees excessively.'],
+    targetMuscles: ['Rectus Abdominis', 'Hip Flexors', 'Upper & Lower Core'],
+    tempo: '1s up - 1s pause - 2s down',
+    restTime: '45-60 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Perform Tuck Crunches with knees bent at 90° bringing chest to knees.',
+    progressionTip: 'Hold a 1-second pause at the peak V-position on every rep.'
+  },
+  'WALL WALK-UPS TO HANDSTAND HOLD': {
+    executionSteps: [
+      '1. Setup: Begin in a high plank position with heels touching a wall behind you.',
+      '2. Walk Up: Step feet up the wall while walking hands backward towards the wall.',
+      '3. Vertical Position: Walk as close to wall as comfortable into a vertical handstand, pressing shoulders up.',
+      '4. Descent: Walk hands forward and feet down wall under control to return to plank.'
+    ],
+    formTips: ['Press floor away strongly to lock out shoulders.', 'Brace glutes to prevent back arching.'],
+    commonMistakes: ['Arching lower back into a banana curve.', 'Collapsing shoulders.'],
+    targetMuscles: ['Deltoids', 'Upper Traps', 'Triceps', 'Core Stabilizers'],
+    tempo: 'Controlled climb & hold',
+    restTime: '90 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Walk feet halfway up wall into a 45° inverted pike position.',
+    progressionTip: 'Hold peak vertical handstand for 15-30 seconds before walking down.'
+  },
+  'L-SIT TUCKED FLOOR PRESS': {
+    executionSteps: [
+      '1. Setup: Sit on floor with legs extended straight. Place palms flat on floor beside hips.',
+      '2. Press & Lift: Press palms down firmly, lock arms out, and lift hips and buttocks off floor.',
+      '3. Tuck Knees: Tuck knees into chest and hold feet off floor in a suspended tucked position.'
+    ],
+    formTips: ['Depress shoulders down away from ears.', 'Compress abdomen hard to lift feet.'],
+    commonMistakes: ['Shoulders shrugging up.', 'Feet dragging on carpet.'],
+    targetMuscles: ['Core', 'Hip Flexors', 'Triceps', 'Lats & Serratus'],
+    tempo: 'Static compression hold',
+    restTime: '60 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Keep heels resting lightly on floor while lifting hips.',
+    progressionTip: 'Extend one or both legs straight out parallel to floor (Full L-Sit).'
+  },
+  'THORACIC CAT-COW FLOW': {
+    executionSteps: [
+      '1. Setup: Start on hands and knees with wrists under shoulders and knees under hips.',
+      '2. Cow Position: Inhale, drop belly towards floor, lift chest and tailbone upward.',
+      '3. Cat Position: Exhale, round spine upward towards ceiling, tuck chin to chest and tuck tailbone.',
+      '4. Flow: Alternate between Cat and Cow smoothly with breath rhythm.'
+    ],
+    formTips: ['Move fluidly through each segment of spine.', 'Focus on thoracic upper spine flex.'],
+    commonMistakes: ['Jerking movements.', 'Holding breath.'],
+    targetMuscles: ['Spinal Erectors', 'Core', 'Thoracic Spine', 'Neck Stabilizers'],
+    tempo: 'Smooth breath flow',
+    restTime: '30 seconds',
+    category: 'Warm-Up',
+    regressionTip: 'Reduce range of motion if spinal discomfort occurs.',
+    progressionTip: 'Pause 3 seconds at full Cat and full Cow extension.'
+  },
+  'WORLD GREATEST LUNGE STRETCH': {
+    executionSteps: [
+      '1. Setup: Step forward into a deep lunge position with right foot forward and left leg extended straight back.',
+      '2. Elbow Drive: Place hands on floor inside right foot. Lower right elbow towards right ankle.',
+      '3. Rotation: Reach right hand up towards ceiling, rotating torso to look at right hand.',
+      '4. Switch: Return hands to floor, step back into plank and repeat on opposite side.'
+    ],
+    formTips: ['Keep back leg actively engaged with heel pushed back.', 'Breathe deeply through rotation.'],
+    commonMistakes: ['Collapsing back knee to floor.', 'Rushing through rotation.'],
+    targetMuscles: ['Hip Flexors', 'Hamstrings', 'Thoracic Spine', 'Adductors'],
+    tempo: 'Dynamic mobility flow',
+    restTime: '30 seconds',
+    category: 'Warm-Up',
+    regressionTip: 'Rest back knee gently on a mat for stability.',
+    progressionTip: 'Add a hamstring hamstring stretch shift backward before rotating.'
+  },
+  'BARBELL BENCH PRESS': {
+    executionSteps: [
+      '1. Setup: Lie on bench with eyes under bar. Grip bar slightly wider than shoulders, plant feet flat on floor.',
+      '2. Arch & Set: Squeeze shoulder blades together into bench and unrack bar over chest.',
+      '3. Controlled Lower: Inhale, lower bar in controlled path to mid-chest while tucking elbows at 45°.',
+      '4. Drive: Exhale and press bar explosively back up over shoulders to lockout.'
+    ],
+    formTips: ['Keep feet firmly planted on floor for leg drive.', 'Maintain upper back arch throughout set.'],
+    commonMistakes: ['Bouncing bar off chest.', 'Flaring elbows outward at 90°.'],
+    targetMuscles: ['Pectoralis Major', 'Anterior Deltoids', 'Triceps Brachii'],
+    tempo: '3s down - 1s pause - 1s up',
+    restTime: '90-120 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Use lighter dumbbells or floor press with dumbbells.',
+    progressionTip: 'Add pause press at chest or increase load progressively.'
+  },
+  'BARBELL BACK SQUATS': {
+    executionSteps: [
+      '1. Setup: Step under bar resting it across upper traps. Unrack bar and take 2 steps back.',
+      '2. Stance: Feet shoulder-width apart, toes turned out 15-30°.',
+      '3. Squat: Inhale deep into belly, push hips back and bend knees, lowering until thigh crease is below knee level.',
+      '4. Drive: Exhale, drive through mid-foot and heels to stand up tall.'
+    ],
+    formTips: ['Keep chest up and knees tracking over toes.', 'Brace core with Valsalva maneuver before descent.'],
+    commonMistakes: ['Rounding lower back at bottom.', 'Knees caving inward.'],
+    targetMuscles: ['Quadriceps', 'Gluteus Maximus', 'Hamstrings', 'Core & Lower Back'],
+    tempo: '3s down - 1s pause - 1s up',
+    restTime: '120-180 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Goblet squat with a single dumbbell or bodyweight air squat.',
+    progressionTip: 'Increase bar weight or perform tempo squats with 4s descent.'
+  },
+  'BARBELL DEADLIFT': {
+    executionSteps: [
+      '1. Setup: Stand with shins 1 inch from bar, feet hip-width apart. Hinge hips to grip bar outside knees.',
+      '2. Wedge & Tension: Pull chest up, pull slack out of bar, flatten back and contract lats.',
+      '3. Drive: Inhale, push floor away with legs until bar reaches knees, then drive hips forward to lockout.'
+    ],
+    formTips: ['Keep bar sliding along shins and thighs.', 'Lock out hips by squeezing glutes, not leaning back.'],
+    commonMistakes: ['Rounding lumbar spine.', 'Jerking bar off floor without pulling slack.'],
+    targetMuscles: ['Hamstrings', 'Glutes', 'Erector Spinae', 'Lats & Upper Back', 'Grip'],
+    tempo: 'Explosive up - 2s controlled down',
+    restTime: '120-180 seconds',
+    category: 'Primary Compound',
+    regressionTip: 'Dumbbell Romanian Deadlift or Trap-Bar Deadlift.',
+    progressionTip: 'Increase load or introduce deficit deadlifts.'
+  }
+};
+
+// Helper function to enrich exercise items with form guidance & smart coaching
+export function enrichExercise(ex: ExerciseItem): ExerciseItem {
+  const guide = MASTER_EXERCISE_GUIDES[ex.name.toUpperCase()];
+  if (guide) {
+    return {
+      ...ex,
+      executionSteps: ex.executionSteps || guide.executionSteps,
+      formTips: ex.formTips || guide.formTips,
+      commonMistakes: ex.commonMistakes || guide.commonMistakes,
+      targetMuscles: ex.targetMuscles || guide.targetMuscles,
+      tempo: ex.tempo || guide.tempo,
+      restTime: ex.restTime || guide.restTime,
+      category: ex.category || guide.category,
+      regressionTip: ex.regressionTip || guide.regressionTip,
+      progressionTip: ex.progressionTip || guide.progressionTip
+    };
+  }
+
+  // Generic fallback enrichment for custom or unmatched exercises
+  return {
+    ...ex,
+    executionSteps: ex.executionSteps || [
+      `1. Setup: Position body securely for ${ex.name} with proper posture and spine alignment.`,
+      `2. Movement Phase: Perform the concentric phase under control focusing on ${ex.muscleGroup.toUpperCase()} activation.`,
+      `3. Peak Contraction: Squeeze targeted muscle group at peak of movement for 1 second.`,
+      `4. Return Phase: Lower under 2-3 second control back to starting position.`
+    ],
+    formTips: ex.formTips || [
+      'Maintain steady breathing (inhale on stretch, exhale on effort).',
+      'Keep core engaged and avoid momentum or swinging.'
+    ],
+    commonMistakes: ex.commonMistakes || [
+      'Using momentum or rapid un-controlled dropping.',
+      'Shortening range of motion.'
+    ],
+    targetMuscles: ex.targetMuscles || [ex.muscleGroup.toUpperCase(), 'Stabilizing Core Muscles'],
+    tempo: ex.tempo || '2s down - 1s pause - 1s up',
+    restTime: ex.restTime || '60 seconds',
+    category: ex.category || (ex.defaultSets && ex.defaultSets >= 4 ? 'Primary Compound' : 'Accessory'),
+    regressionTip: ex.regressionTip || 'Reduce speed, slow down reps, or shorten range of motion slightly.',
+    progressionTip: ex.progressionTip || 'Add a 2-second isometric pause at peak contraction or increase total reps.'
+  };
+}
+
 export const BUILT_IN_WORKOUT_PROGRAMS: WorkoutPlanItem[] = [
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 1 ---
+  // =========================================================================
+  // PROGRAM 1: 8-WEEK NO-EQUIPMENT CALISTHENICS & BODYWEIGHT SHRED (2 MONTHS)
+  // 100% PURE BODYWEIGHT (0 EQUIPMENT LEAKAGE)
+  // =========================================================================
   {
-    id: '7day_no_equipment_calisthenics',
-    name: '7-DAY CALISTHENICS & BODYWEIGHT SHRED',
-    area: 'Bodyweight Mastery',
+    id: '8week_no_equipment_calisthenics_shred',
+    name: '8-WEEK NO-EQUIPMENT CALISTHENICS & BODYWEIGHT SHRED',
+    area: '2-Month Bodyweight Progression',
     tag: 'Calisthenics',
     equipment: 'No Equipment',
     targetGoal: 'calisthenics',
-    recommendedBodyType: 'All Body Types / Athletic or Beginners',
-    compatibilityNote: 'Ideal for relative bodyweight strength, core stability, and agile push-pull conditioning.',
-    description: 'Complete 7-day bodyweight calisthenics system. Perform one focused session each day to build lean muscle and explosive endurance.',
+    durationWeeks: 8,
+    daysPerWeek: 5,
+    recommendedBodyType: 'All Body Types / Zero Gear Home Training',
+    compatibilityNote: '100% equipment-free guaranteed. 6-8 structured exercises per session designed for 2-month linear bodyweight progress.',
+    description: 'Complete 8-Week (2 Month) calisthenics system with 6-8 daily exercises spanning Warm-up, Push, Pull, Leg Overload, Core & Mobility.',
     days: [
       {
         dayNumber: 1,
-        title: 'DAY 1: UPPER PUSH & CHEST',
-        muscleFocus: 'Chest, Shoulders & Triceps',
+        title: 'DAY 1: CHEST & TRICEPS OVERLOAD MATRIX',
+        muscleFocus: 'Upper Push, Chest & Triceps',
         exercises: [
-          { name: 'STANDARD FLOOR PUSHUPS', calories: 120, duration: 10, muscleGroup: 'chest', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20 reps (Strict form, chest to floor)', defaultSets: 4, targetReps: 20 },
-          { name: 'DIAMOND TRICEP PUSHUPS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 12 reps (Triceps focus)', defaultSets: 3, targetReps: 12 },
-          { name: 'DECLINE CHAIR PUSHUPS', calories: 110, duration: 8, muscleGroup: 'chest', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps (Feet elevated on chair or bed)', defaultSets: 3, targetReps: 15 },
-          { name: 'BENCH / CHAIR TRICEP DIPS', calories: 90, duration: 8, muscleGroup: 'arms', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps (Full lockouts at top)', defaultSets: 3, targetReps: 15 }
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 40, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps warm-up', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'STANDARD FLOOR PUSHUPS', calories: 120, duration: 10, muscleGroup: 'chest', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20 reps (Strict form, chest to floor)', defaultSets: 4, targetReps: 20, category: 'Primary Compound' }),
+          enrichExercise({ name: 'DECLINE CHAIR PUSHUPS', calories: 110, duration: 8, muscleGroup: 'chest', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 15 reps (Feet elevated on chair)', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'DIAMOND TRICEP PUSHUPS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 12 reps (Triceps focus)', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'CHAIR / BENCH TRICEP DIPS', calories: 90, duration: 8, muscleGroup: 'arms', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps (Full lockouts)', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'WIDE HAND EXPLOSIVE PUSHUPS', calories: 110, duration: 8, muscleGroup: 'chest', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'PLANK SHOULDER TAPS', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 20 taps', defaultSets: 3, targetReps: 20, category: 'Finisher' }),
+          enrichExercise({ name: 'CHEST & TRICEP DOORWAY STRETCH', calories: 30, duration: 5, muscleGroup: 'chest', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s holds', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 2,
-        title: 'DAY 2: EXPLOSIVE LEGS & PLYOMETRICS',
+        title: 'DAY 2: EXPLOSIVE QUAD & GLUTE CAPACITY',
         muscleFocus: 'Quads, Hamstrings & Calves',
         exercises: [
-          { name: 'EXPLOSIVE AIR SQUATS', calories: 140, duration: 12, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 25 reps (Break 90 degree depth)', defaultSets: 4, targetReps: 25 },
-          { name: 'PLYOMETRIC JUMP LUNGES', calories: 160, duration: 10, muscleGroup: 'legs', tag: 'Athletic', equipment: 'None', details: '4 sets × 16 jump switch reps', defaultSets: 4, targetReps: 16 },
-          { name: 'ISOMETRIC WALL SITS', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 60s static wall holds', defaultSets: 3, targetReps: 60 },
-          { name: 'SINGLE-LEG CALF RAISES', calories: 80, duration: 8, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20 reps per calf', defaultSets: 4, targetReps: 20 }
+          enrichExercise({ name: 'STANDING BODYWEIGHT LEG SWINGS', calories: 40, duration: 5, muscleGroup: 'legs', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 swings per leg', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'EXPLOSIVE AIR SQUATS', calories: 140, duration: 12, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 25 reps (Break 90 degree depth)', defaultSets: 4, targetReps: 25, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PLYOMETRIC JUMP LUNGES', calories: 160, duration: 10, muscleGroup: 'legs', tag: 'Athletic', equipment: 'None', details: '4 sets × 16 jump switch reps', defaultSets: 4, targetReps: 16, category: 'Primary Compound' }),
+          enrichExercise({ name: 'BULGARIAN BODYWEIGHT SPLIT SQUATS', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 12 reps per leg', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'GLUTE BRIDGES WITH 2S HOLD', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 18 reps', defaultSets: 4, targetReps: 18, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC WALL SITS', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 60s static wall holds', defaultSets: 3, targetReps: 60, category: 'Accessory' }),
+          enrichExercise({ name: 'SINGLE-LEG CALF RAISES', calories: 80, duration: 8, muscleGroup: 'legs', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20 reps per calf', defaultSets: 4, targetReps: 20, category: 'Finisher' }),
+          enrichExercise({ name: 'QUAD & QUADRICEPS MAT STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s holds', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 3,
-        title: 'DAY 3: INVERTED PULL & LAT MATRIX',
+        title: 'DAY 3: INVERTED PULL & LAT DENSITY',
         muscleFocus: 'Lats, Upper Back & Biceps',
         exercises: [
-          { name: 'INVERTED DOORWAY BODYWEIGHT ROWS', calories: 130, duration: 10, muscleGroup: 'back', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 15 reps (Squeeze lats at top)', defaultSets: 4, targetReps: 15 },
-          { name: 'PRONE SUPERMAN EXTENSIONS', calories: 90, duration: 8, muscleGroup: 'back', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20 reps (2s hold at peak)', defaultSets: 4, targetReps: 20 },
-          { name: 'TOWEL RESISTANCE BICEP ISOMETRICS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 12 heavy pull reps', defaultSets: 3, targetReps: 12 },
-          { name: 'REVERSE SHOULDER FLY EXTENSIONS', calories: 80, duration: 8, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 controlled prone arm flys', defaultSets: 3, targetReps: 15 }
+          enrichExercise({ name: 'THORACIC CAT-COW FLOW', calories: 40, duration: 5, muscleGroup: 'back', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 12 reps', defaultSets: 2, targetReps: 12, category: 'Warm-Up' }),
+          enrichExercise({ name: 'DOORWAY BODYWEIGHT ROWS', calories: 130, duration: 10, muscleGroup: 'back', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 15 reps (Squeeze lats)', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PRONE SUPERMAN LAT EXTENSIONS', calories: 110, duration: 8, muscleGroup: 'back', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20 reps (2s peak hold)', defaultSets: 4, targetReps: 20, category: 'Primary Compound' }),
+          enrichExercise({ name: 'REVERSE SHOULDER FLY EXTENSIONS', calories: 90, duration: 8, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 prone flys', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC BICEP TENSION HOLDS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 30s max pull hold', defaultSets: 3, targetReps: 30, category: 'Accessory' }),
+          enrichExercise({ name: 'BIRD DOG BALANCE EXTENSIONS', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 12 per side', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'PRONE COBRA BACK EXTENSION', calories: 70, duration: 6, muscleGroup: 'back', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15, category: 'Finisher' }),
+          enrichExercise({ name: 'CHILD POSE LAT DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 4,
-        title: 'DAY 4: CORE FORTRESS & HOLLOW HOLDS',
-        muscleFocus: 'Abs, Obliques & Lower Back',
+        title: 'DAY 4: ABDOMINAL FORTRESS & HOLLOW HOLDS',
+        muscleFocus: 'Abs, Obliques & Core Bracing',
         exercises: [
-          { name: 'HOLLOW BODY COMPRESSION HOLDS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 45s hollow body hold', defaultSets: 4, targetReps: 45 },
-          { name: 'RAPID MOUNTAIN CLIMBERS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Athletic', equipment: 'None', details: '4 sets × 30s fast knee drives', defaultSets: 4, targetReps: 30 },
-          { name: 'SIDE PLANK OBLIQUE DIP LIFTS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps per side', defaultSets: 3, targetReps: 15 },
-          { name: 'REVERSE CRUNCH KNEE LIFTS', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 20 controlled lower abdominal lifts', defaultSets: 3, targetReps: 20 }
+          enrichExercise({ name: 'STANDING CORE TWISTS', calories: 30, duration: 4, muscleGroup: 'core', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 20 twists', defaultSets: 2, targetReps: 20, category: 'Warm-Up' }),
+          enrichExercise({ name: 'HOLLOW BODY COMPRESSION HOLDS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 45s hollow body hold', defaultSets: 4, targetReps: 45, category: 'Primary Compound' }),
+          enrichExercise({ name: 'RAPID MOUNTAIN CLIMBERS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Athletic', equipment: 'None', details: '4 sets × 30s fast knee drives', defaultSets: 4, targetReps: 30, category: 'Primary Compound' }),
+          enrichExercise({ name: 'BICYCLE CRUNCH SPRINTS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 30 reps', defaultSets: 4, targetReps: 30, category: 'Accessory' }),
+          enrichExercise({ name: 'SIDE PLANK OBLIQUE DIP LIFTS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps per side', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'REVERSE CRUNCH KNEE LIFTS', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 20 controlled lower abdominal lifts', defaultSets: 3, targetReps: 20, category: 'Accessory' }),
+          enrichExercise({ name: 'FOREARM PLANK RIGID HOLD', calories: 90, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 60s rigid plank', defaultSets: 3, targetReps: 60, category: 'Finisher' }),
+          enrichExercise({ name: 'COBRA spine STRETCH', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s gentle stretch', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 5,
-        title: 'DAY 5: METABOLIC BURPEE HIIT & CARDIO',
-        muscleFocus: 'Full Body & Endurance',
+        title: 'DAY 5: METABOLIC BURPEE & SHOULDER PIKE',
+        muscleFocus: 'Deltoids, Upper Body & Full Body Cardio',
         exercises: [
-          { name: 'FULL BODY BURPEE SPRINTS', calories: 180, duration: 12, muscleGroup: 'cardio', tag: 'Athletic', equipment: 'None', details: '5 sets × 15 explosive burpees', defaultSets: 5, targetReps: 15 },
-          { name: 'HIGH KNEE CARDIO SPRINTS', calories: 130, duration: 10, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 45s max frequency sprint', defaultSets: 4, targetReps: 45 },
-          { name: 'SQUAT JUMP TUCK LANDINGS', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'Athletic', equipment: 'None', details: '4 sets × 15 explosive vertical tuck jumps', defaultSets: 4, targetReps: 15 },
-          { name: 'FOREARM PLANK HOLD', calories: 70, duration: 6, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 60s rigid core plank', defaultSets: 3, targetReps: 60 }
-        ]
-      },
-      {
-        dayNumber: 6,
-        title: 'DAY 6: ISOMETRIC SKILL & PIKE OVERLOAD',
-        muscleFocus: 'Shoulders & Stability',
-        exercises: [
-          { name: 'PIKE PUSHUPS (SHOULDER PRESS)', calories: 120, duration: 10, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 12 reps (Hips high, head down)', defaultSets: 4, targetReps: 12 },
-          { name: 'CROW POSE BALANCE DRILLS', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 20s static balance holds', defaultSets: 4, targetReps: 20 },
-          { name: 'L-SIT COMPRESSION TUCKS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 10 knee tucks off floor', defaultSets: 3, targetReps: 10 },
-          { name: 'REVERSE BRIDGE ARCH HOLDS', calories: 80, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 30s back bridge extension', defaultSets: 3, targetReps: 30 }
-        ]
-      },
-      {
-        dayNumber: 7,
-        title: 'DAY 7: DEEP JOINT MOBILITY & RECOVERY',
-        muscleFocus: 'Flexibility & Recovery',
-        exercises: [
-          { name: 'THORACIC CAT-COW FLOW', calories: 50, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 slow breath-synchronized movements', defaultSets: 3, targetReps: 12 },
-          { name: 'PIGEON POSE HIP OPENERS', calories: 50, duration: 8, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 60s holds per side', defaultSets: 3, targetReps: 60 },
-          { name: 'DOWNWARD DOG TO COBRA EXTENSION', calories: 60, duration: 8, muscleGroup: 'core', tag: 'Mobility', equipment: 'None', details: '3 sets × 10 fluid wave transitions', defaultSets: 3, targetReps: 10 },
-          { name: 'WORLD GREATEST LUNGE REACH', calories: 60, duration: 8, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 8 reps per leg with overhead rotation', defaultSets: 3, targetReps: 8 }
+          enrichExercise({ name: 'JUMPING JACK WARMUP', calories: 50, duration: 5, muscleGroup: 'cardio', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 60s steady pace', defaultSets: 2, targetReps: 60, category: 'Warm-Up' }),
+          enrichExercise({ name: 'PIKE PUSHUPS (SHOULDER PRESS)', calories: 120, duration: 10, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 12 reps (Hips high, head down)', defaultSets: 4, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'FULL BODY BURPEE SPRINTS', calories: 180, duration: 12, muscleGroup: 'cardio', tag: 'Athletic', equipment: 'None', details: '5 sets × 15 explosive burpees', defaultSets: 5, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'HIGH KNEE CARDIO SPRINTS', calories: 130, duration: 10, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 45s max frequency sprint', defaultSets: 4, targetReps: 45, category: 'Accessory' }),
+          enrichExercise({ name: 'SQUAT JUMP TUCK LANDINGS', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'Athletic', equipment: 'None', details: '4 sets × 15 vertical tuck jumps', defaultSets: 4, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'PLANK-TO-PUSHUP COMMANDOS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 12 up-down reps', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'WALL WALK-UPS TO HANDSTAND HOLD', calories: 100, duration: 8, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 30s wall holds', defaultSets: 3, targetReps: 30, category: 'Finisher' }),
+          enrichExercise({ name: 'WORLD GREATEST LUNGE STRETCH', calories: 40, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '2 sets × 8 per side', defaultSets: 2, targetReps: 8, category: 'Mobility' })
         ]
       }
     ]
   },
 
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 2 ---
+  // =========================================================================
+  // PROGRAM 2: NEW! 4-WEEK NO-EQUIPMENT METABOLIC FAT BURN & SHRED (1 MONTH)
+  // 100% PURE BODYWEIGHT - HIGH DENSITY HIIT & FAT BURNING
+  // =========================================================================
   {
-    id: '14day_zero_equipment_fullbody_reset',
-    name: '14-DAY ZERO EQUIPMENT FULL BODY RESET',
-    area: 'Zero Equipment Home Reset',
+    id: '4week_no_equipment_metabolic_fat_burn',
+    name: '4-WEEK NO-EQUIPMENT METABOLIC FAT BURN & SHRED',
+    area: '1-Month Bodyweight Fat Loss HIIT',
     tag: 'Fat Loss',
     equipment: 'No Equipment',
     targetGoal: 'fat_loss',
-    recommendedBodyType: 'All Body Types / Home Workout',
-    compatibilityNote: 'Requires zero gear. Focuses on full-body functional endurance and calorie burn.',
-    description: 'A 14-day progressive bodyweight routine designed for at-home training with zero gym gear needed.',
+    durationWeeks: 4,
+    daysPerWeek: 4,
+    recommendedBodyType: 'Weight Loss / Calorie Shred / Rapid Recomp',
+    compatibilityNote: '100% equipment-free high-density metabolic training. High calorie burn per minute with zero equipment required.',
+    description: 'High-energy 4-Week bodyweight fat burn protocol engineered with fast-paced plyometric intervals and bodyweight density circuits.',
     days: [
       {
         dayNumber: 1,
-        title: 'DAY 1: FULL BODY FOUNDATIONS',
-        muscleFocus: 'Quads, Chest & Core',
+        title: 'DAY 1: HIGH-FREQUENCY HIIT & LOWER BODY BURN',
+        muscleFocus: 'Legs, Heart Rate & Full Body Calorie Burn',
         exercises: [
-          { name: 'BODYWEIGHT AIR SQUATS', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Bodyweight', equipment: 'None', details: '4 sets × 20 reps', defaultSets: 4, targetReps: 20 },
-          { name: 'KNEE OR FULL PUSHUPS', calories: 110, duration: 8, muscleGroup: 'chest', tag: 'Bodyweight', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'ALTERNATING REVERSE LUNGES', calories: 120, duration: 10, muscleGroup: 'legs', tag: 'Bodyweight', equipment: 'None', details: '3 sets × 12 reps per leg', defaultSets: 3, targetReps: 12 },
-          { name: 'FOREARM PLANK HOLD', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 45s holds', defaultSets: 3, targetReps: 45 }
+          enrichExercise({ name: 'JUMPING JACK WARMUP', calories: 50, duration: 5, muscleGroup: 'cardio', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 60s warm-up', defaultSets: 2, targetReps: 60, category: 'Warm-Up' }),
+          enrichExercise({ name: 'EXPLOSIVE AIR SQUATS', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '4 sets × 25 rapid reps', defaultSets: 4, targetReps: 25, category: 'Primary Compound' }),
+          enrichExercise({ name: 'SKATER HOP LATERAL JUMPS', calories: 160, duration: 10, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '4 sets × 20 bounds per side', defaultSets: 4, targetReps: 20, category: 'Primary Compound' }),
+          enrichExercise({ name: 'RAPID MOUNTAIN CLIMBERS', calories: 140, duration: 8, muscleGroup: 'core', tag: 'HIIT', equipment: 'None', details: '4 sets × 40s max speed', defaultSets: 4, targetReps: 40, category: 'Accessory' }),
+          enrichExercise({ name: 'PLYOMETRIC JUMP LUNGES', calories: 170, duration: 10, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '4 sets × 16 jump switches', defaultSets: 4, targetReps: 16, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC WALL SITS', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Burnout', equipment: 'None', details: '3 sets × 60s hold', defaultSets: 3, targetReps: 60, category: 'Finisher' }),
+          enrichExercise({ name: 'QUAD & QUADRICEPS MAT STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s holds', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 2,
-        title: 'DAY 2: CARDIO ELEVATION & ABS',
-        muscleFocus: 'Heart Rate & Core',
+        title: 'DAY 2: EXPLOSIVE UPPER BODY PUSH & CORE SHRED',
+        muscleFocus: 'Chest, Shoulders, Triceps & Abs',
         exercises: [
-          { name: 'JUMPING JACKS SPEED BURST', calories: 140, duration: 10, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 45s continuous', defaultSets: 4, targetReps: 45 },
-          { name: 'MOUNTAIN CLIMBERS', calories: 130, duration: 8, muscleGroup: 'core', tag: 'Cardio', equipment: 'None', details: '4 sets × 30s rapid knee drives', defaultSets: 4, targetReps: 30 },
-          { name: 'CRUNCHES WITH PAUSE', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 20 reps', defaultSets: 3, targetReps: 20 },
-          { name: 'HIGH KNEE MARCH IN PLACE', calories: 110, duration: 8, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '3 sets × 60s steady tempo', defaultSets: 3, targetReps: 60 }
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 40, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'STANDARD FLOOR PUSHUPS', calories: 130, duration: 10, muscleGroup: 'chest', tag: 'Shred', equipment: 'None', details: '4 sets × 18 strict reps', defaultSets: 4, targetReps: 18, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PIKE PUSHUPS (SHOULDER PRESS)', calories: 120, duration: 10, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PLANK-TO-PUSHUP COMMANDOS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Core HIIT', equipment: 'None', details: '4 sets × 12 up-downs', defaultSets: 4, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'CHAIR / BENCH TRICEP DIPS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Burnout', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'BICYCLE CRUNCH SPRINTS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Abs', equipment: 'None', details: '4 sets × 30 fast twists', defaultSets: 4, targetReps: 30, category: 'Finisher' }),
+          enrichExercise({ name: 'CHEST & TRICEP DOORWAY STRETCH', calories: 30, duration: 5, muscleGroup: 'chest', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s holds', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 3,
-        title: 'DAY 3: POSTERIOR CHAIN & LATS',
-        muscleFocus: 'Glutes, Lower Back & Rear Delts',
+        title: 'DAY 3: FULL BODY CARDIO INFERNO & BURPEE SPRINT',
+        muscleFocus: 'Full Body Cardiovascular System & Stamina',
         exercises: [
-          { name: 'GLUTE BRIDGES WITH SQUEEZE', calories: 110, duration: 10, muscleGroup: 'legs', tag: 'Bodyweight', equipment: 'None', details: '4 sets × 18 reps with 2s squeeze', defaultSets: 4, targetReps: 18 },
-          { name: 'SUPERMAN ARM EXTENSIONS', calories: 90, duration: 8, muscleGroup: 'back', tag: 'Bodyweight', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'DOORWAY ARM TOWEL ROWS', calories: 100, duration: 8, muscleGroup: 'back', tag: 'Bodyweight', equipment: 'None', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 },
-          { name: 'BIRD DOG BALANCE', calories: 70, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 10 reps per side', defaultSets: 3, targetReps: 10 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 3 ---
-  {
-    id: 'no_eq_hiit_fat_incinerator',
-    name: 'NO-EQUIPMENT HIIT FAT INCINERATOR',
-    area: 'HIIT & Fat Loss',
-    tag: 'Fat Loss',
-    equipment: 'No Equipment',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'All Body Types / Max Calorie Shred Goal',
-    compatibilityNote: 'High intensity interval training. Max metabolic output using purely body weight.',
-    description: 'Relentless bodyweight HIIT rounds engineered to torch maximum calories in minimal time.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: BURPEE & SQUAT INCINERATOR',
-        muscleFocus: 'Full Body Cardiovascular Melt',
-        exercises: [
-          { name: 'EXPLOSIVE BURPEES', calories: 220, duration: 12, muscleGroup: 'cardio', tag: 'HIIT', equipment: 'None', details: '5 sets × 12 reps', defaultSets: 5, targetReps: 12 },
-          { name: 'SPEED AIR SQUATS', calories: 160, duration: 10, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '4 sets × 25 reps', defaultSets: 4, targetReps: 25 },
-          { name: 'PLANK JACK SPRINTS', calories: 140, duration: 8, muscleGroup: 'core', tag: 'HIIT', equipment: 'None', details: '4 sets × 40s fast feet', defaultSets: 4, targetReps: 40 },
-          { name: 'SKATER JUMPS', calories: 150, duration: 8, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '4 sets × 20 alternating leaps', defaultSets: 4, targetReps: 20 }
-        ]
-      },
-      {
-        dayNumber: 2,
-        title: 'DAY 2: PUSH & CORE METABOLIC BURN',
-        muscleFocus: 'Chest, Arms & Abs',
-        exercises: [
-          { name: 'TEMPO FLOOR PUSHUPS', calories: 150, duration: 10, muscleGroup: 'chest', tag: 'HIIT', equipment: 'None', details: '4 sets × 15 reps (3s down)', defaultSets: 4, targetReps: 15 },
-          { name: 'BICYCLE CRUNCH SPRINTS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 30 reps', defaultSets: 4, targetReps: 30 },
-          { name: 'COMMANDO PLANK LIFTS', calories: 130, duration: 8, muscleGroup: 'core', tag: 'HIIT', equipment: 'None', details: '3 sets × 12 up-down reps', defaultSets: 3, targetReps: 12 },
-          { name: 'HIGH KNEE SPRINTS', calories: 160, duration: 8, muscleGroup: 'cardio', tag: 'HIIT', equipment: 'None', details: '4 sets × 45s max speed', defaultSets: 4, targetReps: 45 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 4 ---
-  {
-    id: 'beginner_bodyweight_foundations',
-    name: 'BEGINNER BODYWEIGHT FOUNDATIONS',
-    area: 'Beginner Friendly',
-    tag: 'Joint Safe',
-    equipment: 'No Equipment',
-    targetGoal: 'joint_care',
-    recommendedBodyType: 'Beginners / New to Fitness / Soft Entry',
-    compatibilityNote: 'Low barrier to entry. Smooth transitions with zero equipment needed.',
-    description: 'Perfect starting point for newcomers to build baseline strength, joint stability, and stamina safely at home.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: FULL BODY MOBILITY & BASE',
-        muscleFocus: 'Joint Activation & Light Muscles',
-        exercises: [
-          { name: 'WALL PUSHUPS', calories: 80, duration: 8, muscleGroup: 'chest', tag: 'Beginner', equipment: 'None', details: '3 sets × 15 smooth reps against wall', defaultSets: 3, targetReps: 15 },
-          { name: 'CHAIR ASSISTED SQUATS', calories: 100, duration: 10, muscleGroup: 'legs', tag: 'Beginner', equipment: 'None', details: '3 sets × 12 reps sit-to-stand', defaultSets: 3, targetReps: 12 },
-          { name: 'STANDING MARCH IN PLACE', calories: 90, duration: 8, muscleGroup: 'cardio', tag: 'Beginner', equipment: 'None', details: '3 sets × 60s steady pace', defaultSets: 3, targetReps: 60 },
-          { name: 'KNEE BRACING BIRD DOG', calories: 70, duration: 6, muscleGroup: 'core', tag: 'Beginner', equipment: 'None', details: '3 sets × 10 per side', defaultSets: 3, targetReps: 10 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 5 ---
-  {
-    id: 'no_equipment_push_pull_legs',
-    name: 'NO-EQUIPMENT PUSH / PULL / LEGS SPLIT',
-    area: 'Bodyweight Split Routine',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'Athletic / intermediate Home Lifters',
-    compatibilityNote: 'Classic PPL structure re-engineered strictly for bodyweight mastery.',
-    description: 'Classic 3-day Push-Pull-Legs rotation utilizing pure body weight levers, tempo variations, and angle changes.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: BODYWEIGHT PUSH (CHEST & SHOULDERS)',
-        muscleFocus: 'Chest, Delts & Triceps',
-        exercises: [
-          { name: 'DECLINE PUSHUPS', calories: 130, duration: 10, muscleGroup: 'chest', tag: 'Push', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'PIKE PUSHUPS', calories: 120, duration: 10, muscleGroup: 'shoulders', tag: 'Push', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'CHAIR TRICEP DIPS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Push', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 },
-          { name: 'PLANK SHOULDER TAPS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Push', equipment: 'None', details: '3 sets × 20 taps', defaultSets: 3, targetReps: 20 }
-        ]
-      },
-      {
-        dayNumber: 2,
-        title: 'DAY 2: BODYWEIGHT PULL (BACK & BICEPS)',
-        muscleFocus: 'Lats, Upper Back & Arms',
-        exercises: [
-          { name: 'DOORWAY / TABLE INVERTED ROWS', calories: 140, duration: 10, muscleGroup: 'back', tag: 'Pull', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'PRONE SUPERMAN PULLBACKS', calories: 100, duration: 8, muscleGroup: 'back', tag: 'Pull', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'ISOMETRIC BICEP TOWEL HOLDS', calories: 90, duration: 8, muscleGroup: 'arms', tag: 'Pull', equipment: 'None', details: '3 sets × 30s max tension pull', defaultSets: 3, targetReps: 30 },
-          { name: 'REVERSE FLYES ON MAT', calories: 80, duration: 8, muscleGroup: 'shoulders', tag: 'Pull', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 }
-        ]
-      },
-      {
-        dayNumber: 3,
-        title: 'DAY 3: BODYWEIGHT LEGS & GLUTES',
-        muscleFocus: 'Quads, Hamstrings & Calves',
-        exercises: [
-          { name: 'BULGARIAN SPLIT SQUATS (NO WT)', calories: 160, duration: 12, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '4 sets × 12 per leg', defaultSets: 4, targetReps: 12 },
-          { name: 'SINGLE LEG GLUTE BRIDGES', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '4 sets × 12 per leg', defaultSets: 4, targetReps: 12 },
-          { name: 'AIR SQUAT PULSES', calories: 120, duration: 8, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '3 sets × 20 pulse reps', defaultSets: 3, targetReps: 20 },
-          { name: 'SINGLE-LEG CALF RAISES', calories: 80, duration: 8, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '4 sets × 20 per leg', defaultSets: 4, targetReps: 20 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 6 ---
-  {
-    id: 'morning_mobility_posture_fix',
-    name: 'MORNING MOBILITY & POSTURE CORRECTION',
-    area: 'Mobility & Spinal Alignment',
-    tag: 'Joint Safe',
-    equipment: 'No Equipment',
-    targetGoal: 'joint_care',
-    recommendedBodyType: 'Desk Workers / Posture Fix / All Fitness Levels',
-    compatibilityNote: 'Gentle spinal decompression, neck tension release, and thoracic mobility.',
-    description: 'Targeted morning mobility routine to unlock stiff joints, eliminate forward head posture, and mobilize the thoracic spine.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: THORACIC & POSTURE UNLOCK',
-        muscleFocus: 'Upper Back, Neck & Spine',
-        exercises: [
-          { name: 'THORACIC CAT-COW FLOW', calories: 50, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 deep breath cycles', defaultSets: 3, targetReps: 12 },
-          { name: 'WORLD GREATEST LUNGE REACH', calories: 60, duration: 8, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 8 reps per side', defaultSets: 3, targetReps: 8 },
-          { name: 'DOORWAY CHEST & DELT OPENER', calories: 40, duration: 6, muscleGroup: 'chest', tag: 'Mobility', equipment: 'None', details: '3 sets × 45s stretch holds', defaultSets: 3, targetReps: 45 },
-          { name: 'CHIN TUCKS & NECK DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'shoulders', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 gentle hold reps', defaultSets: 3, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 7 ---
-  {
-    id: 'bodyweight_legs_glutes_sculptor',
-    name: 'BODYWEIGHT LEGS & GLUTES SCULPTOR',
-    area: 'Lower Body Sculpting',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'All Body Types / Lower Body Focus',
-    compatibilityNote: 'High repetition time-under-tension lower body hypertrophy without heavy iron.',
-    description: 'High volume leg and glute conditioning program designed to build lower body strength and endurance at home.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: GLUTE BURNOUT & QUAD OVERLOAD',
-        muscleFocus: 'Glutes, Quads & Hamstrings',
-        exercises: [
-          { name: 'SUMO WIDE STANCE AIR SQUATS', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '4 sets × 25 reps', defaultSets: 4, targetReps: 25 },
-          { name: 'DONKEY KICK GLUTE ISOLATION', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '4 sets × 20 per leg', defaultSets: 4, targetReps: 20 },
-          { name: 'FIRE HYDRANTS (OUTER GLUTE)', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '4 sets × 20 per leg', defaultSets: 4, targetReps: 20 },
-          { name: 'WALL SIT ISOMETRIC BRACE', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Legs', equipment: 'None', details: '3 sets × 60s holds', defaultSets: 3, targetReps: 60 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 8 ---
-  {
-    id: 'upper_body_bodyweight_blaster',
-    name: 'UPPER BODY BODYWEIGHT BLASTER',
-    area: 'Upper Body Bodyweight',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'All Body Types / Upper Body Focus',
-    compatibilityNote: 'Push-pull volume targeting chest, arms, shoulders, and core.',
-    description: 'Comprehensive upper body bodyweight protocol focused on pushing strength, shoulder stability, and arm definition.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: CHEST, SHOULDERS & TRICEPS BLASTER',
-        muscleFocus: 'Chest & Arms',
-        exercises: [
-          { name: 'WIDE HAND PUSHUPS', calories: 140, duration: 10, muscleGroup: 'chest', tag: 'Upper Body', equipment: 'None', details: '4 sets × 18 reps', defaultSets: 4, targetReps: 18 },
-          { name: 'INCLINE CHAIR / BED PUSHUPS', calories: 110, duration: 8, muscleGroup: 'chest', tag: 'Upper Body', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'PIKE SHOULDER PRESS PUSHUPS', calories: 130, duration: 10, muscleGroup: 'shoulders', tag: 'Upper Body', equipment: 'None', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 },
-          { name: 'DIAMOND PUSHUPS', calories: 120, duration: 8, muscleGroup: 'arms', tag: 'Upper Body', equipment: 'None', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 9 ---
-  {
-    id: '15min_quick_home_cardio_blast',
-    name: '15-MINUTE QUICK HOME CARDIO BLAST',
-    area: 'Express Home Workout',
-    tag: 'Fat Loss',
-    equipment: 'No Equipment',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'Busy Individuals / Quick Session Goal',
-    compatibilityNote: '15 minutes total. Non-stop rapid cardio movements to ignite metabolism.',
-    description: 'Fast-paced 15-minute home workout designed for busy days when you need a quick sweat session with zero setup.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: 15-MIN EXPRESS SHRED',
-        muscleFocus: 'Cardio & Full Body',
-        exercises: [
-          { name: 'RAPID JUMPING JACKS', calories: 120, duration: 4, muscleGroup: 'cardio', tag: 'Express', equipment: 'None', details: '3 sets × 60s max speed', defaultSets: 3, targetReps: 60 },
-          { name: 'HIGH KNEE SPRINTS', calories: 130, duration: 4, muscleGroup: 'cardio', tag: 'Express', equipment: 'None', details: '3 sets × 45s fast pace', defaultSets: 3, targetReps: 45 },
-          { name: 'HALF BURPEES (NO PUSHUP)', calories: 140, duration: 4, muscleGroup: 'cardio', tag: 'Express', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 },
-          { name: 'PLANK HOLD FINISHER', calories: 60, duration: 3, muscleGroup: 'core', tag: 'Express', equipment: 'None', details: '2 sets × 60s hold', defaultSets: 2, targetReps: 60 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 10 ---
-  {
-    id: 'bodyweight_isometric_strength',
-    name: 'ISOMETRIC BODYWEIGHT STRENGTH & BRACING',
-    area: 'Core Bracing & Isometric Hold',
-    tag: 'Strength',
-    equipment: 'No Equipment',
-    targetGoal: 'strength',
-    recommendedBodyType: 'All Body Types / Isometric Hold Goal',
-    compatibilityNote: 'Zero joint motion. Max muscle firing through static tension and time under hold.',
-    description: 'Build tendon strength and core rigidity with static isometric holds that protect joint structures.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: ISOMETRIC HOLD MATRIX',
-        muscleFocus: 'Static Core & Tendon Strength',
-        exercises: [
-          { name: 'WALL SIT BRACE HOLD', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Isometric', equipment: 'None', details: '4 sets × 60s hold', defaultSets: 4, targetReps: 60 },
-          { name: 'FOREARM PLANK RIGID HOLD', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Isometric', equipment: 'None', details: '4 sets × 60s hold', defaultSets: 4, targetReps: 60 },
-          { name: 'HOLLOW BODY STATIC BRACE', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Isometric', equipment: 'None', details: '4 sets × 45s hold', defaultSets: 4, targetReps: 45 },
-          { name: 'SUPERMAN ISOMETRIC HOLD', calories: 80, duration: 6, muscleGroup: 'back', tag: 'Isometric', equipment: 'None', details: '3 sets × 45s hold', defaultSets: 3, targetReps: 45 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 11 ---
-  {
-    id: 'home_fat_burn_tabata_shred',
-    name: 'NO-EQUIPMENT TABATA FAT SHRED',
-    area: 'Tabata 20/10 Conditioning',
-    tag: 'Fat Loss',
-    equipment: 'No Equipment',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'All Fitness Levels / Fat Loss Goal',
-    compatibilityNote: '20 seconds max output, 10 seconds rest. Proven metabolic booster.',
-    description: 'Classic 20s work / 10s rest Tabata protocol using simple bodyweight movements for rapid fat oxidation.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: TABATA METABOLIC ONSLAUGHT',
-        muscleFocus: 'Full Body Tabata Intervals',
-        exercises: [
-          { name: 'TABATA SQUAT SPRINTS', calories: 160, duration: 8, muscleGroup: 'legs', tag: 'Tabata', equipment: 'None', details: '8 rounds (20s on / 10s rest)', defaultSets: 8, targetReps: 20 },
-          { name: 'TABATA MOUNTAIN CLIMBERS', calories: 140, duration: 8, muscleGroup: 'core', tag: 'Tabata', equipment: 'None', details: '8 rounds (20s on / 10s rest)', defaultSets: 8, targetReps: 20 },
-          { name: 'TABATA PUSHUPS / KNEE PUSHUPS', calories: 130, duration: 8, muscleGroup: 'chest', tag: 'Tabata', equipment: 'None', details: '8 rounds (20s on / 10s rest)', defaultSets: 8, targetReps: 20 },
-          { name: 'TABATA JUMPING JACKS', calories: 120, duration: 8, muscleGroup: 'cardio', tag: 'Tabata', equipment: 'None', details: '8 rounds (20s on / 10s rest)', defaultSets: 8, targetReps: 20 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 12 ---
-  {
-    id: 'no_eq_athletic_agility_plyo',
-    name: 'ATHLETIC PLYOMETRICS & AGILITY',
-    area: 'Athletic Performance',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'Athletes / High Energy / Explosive Goal',
-    compatibilityNote: 'Fast footwork, plyometric jumping, and power generation.',
-    description: 'Develop fast-twitch muscle fibers, explosive jump height, and agility with zero workout equipment.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: EXPLOSIVE POWER & FOOTWORK',
-        muscleFocus: 'Explosive Legs & Fast Twitch',
-        exercises: [
-          { name: 'SQUAT JUMP EXPLOSION', calories: 170, duration: 10, muscleGroup: 'legs', tag: 'Plyo', equipment: 'None', details: '4 sets × 15 explosive jump landings', defaultSets: 4, targetReps: 15 },
-          { name: 'LATERAL BOUNDS (SKATER LEAPS)', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'Plyo', equipment: 'None', details: '4 sets × 20 leaps', defaultSets: 4, targetReps: 20 },
-          { name: 'TUCK JUMPS', calories: 180, duration: 8, muscleGroup: 'cardio', tag: 'Plyo', equipment: 'None', details: '3 sets × 12 vertical tucks', defaultSets: 3, targetReps: 12 },
-          { name: 'IN-OUT QUICK FEET AGILITY', calories: 110, duration: 8, muscleGroup: 'cardio', tag: 'Agility', equipment: 'None', details: '4 sets × 30s max foot speed', defaultSets: 4, targetReps: 30 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 13 ---
-  {
-    id: 'zero_equipment_abs_obliques_blast',
-    name: 'ZERO EQUIPMENT ABS & OBLIQUES SHRED',
-    area: 'Abdominal Shred',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'All Fitness Levels / Ab Focus',
-    compatibilityNote: 'Pure floor core exercises targeting six-pack abs and serratus/obliques.',
-    description: 'Targeted core compression routine engineered to build sharp abdominal definition and core endurance.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: SIX-PACK & OBLIQUE SHRED',
-        muscleFocus: 'Rectus Abdominis & Obliques',
-        exercises: [
-          { name: 'BICYCLE CRUNCH KNEE TOUCHES', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Abs', equipment: 'None', details: '4 sets × 25 reps', defaultSets: 4, targetReps: 25 },
-          { name: 'RUSSIAN TWIST BODYWEIGHT', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Abs', equipment: 'None', details: '4 sets × 30 twists', defaultSets: 4, targetReps: 30 },
-          { name: 'REVERSE CRUNCH LEG LIFTS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Abs', equipment: 'None', details: '3 sets × 20 controlled reps', defaultSets: 3, targetReps: 20 },
-          { name: 'SIDE PLANK DIP LIFTS', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Abs', equipment: 'None', details: '3 sets × 12 per side', defaultSets: 3, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 14 ---
-  {
-    id: 'no_eq_joint_safe_low_impact',
-    name: 'NO-EQUIPMENT LOW-IMPACT JOINT RECOVERY',
-    area: 'Joint Protection & Recovery',
-    tag: 'Joint Safe',
-    equipment: 'No Equipment',
-    targetGoal: 'joint_care',
-    recommendedBodyType: 'Joint Sensitivity / High Body Weight / Active Recovery',
-    compatibilityNote: 'Zero jumps, zero hard impact landings. Gentle on knees, spine, and ankles.',
-    description: 'A low-impact, joint-safe bodyweight system for burning calories and mobilizing muscles without stress on joints.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: KNEE-SAFE LOW IMPACT CONDITIONING',
-        muscleFocus: 'Gentle Cardio & Core',
-        exercises: [
-          { name: 'STANDING LOW-IMPACT MARCH', calories: 100, duration: 10, muscleGroup: 'cardio', tag: 'Joint Safe', equipment: 'None', details: '4 sets × 60s steady marching', defaultSets: 4, targetReps: 60 },
-          { name: 'GLUTE BRIDGES ON MAT', calories: 120, duration: 10, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'None', details: '4 sets × 15 reps with 2s hold', defaultSets: 4, targetReps: 15 },
-          { name: 'BIRD-DOG STABILIZATION', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 10 per side', defaultSets: 3, targetReps: 10 },
-          { name: 'SEATED ARM PUNCHES', calories: 90, duration: 8, muscleGroup: 'cardio', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 90s rapid light punches', defaultSets: 3, targetReps: 90 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 15 ---
-  {
-    id: 'calisthenics_skills_handstand_l_sit',
-    name: 'CALISTHENICS SKILLS & ISOMETRIC HOLDS',
-    area: 'Skill Calisthenics',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'Advanced Bodyweight Athletes',
-    compatibilityNote: 'Focuses on shoulder strength, wall handstand holds, and L-sit compression.',
-    description: 'Master gymnastics skill progressions like wall handstand holds, crow pose balance, and floor L-sits.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: WALL HANDSTAND & L-SIT PROGRESSION',
-        muscleFocus: 'Shoulder Capacity & Core Compression',
-        exercises: [
-          { name: 'WALL HANDSTAND HOLDS', calories: 130, duration: 10, muscleGroup: 'shoulders', tag: 'Skill', equipment: 'None', details: '4 sets × 30s wall holds', defaultSets: 4, targetReps: 30 },
-          { name: 'FLOOR L-SIT TUCK HOLDS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Skill', equipment: 'None', details: '4 sets × 20s tuck holds off floor', defaultSets: 4, targetReps: 20 },
-          { name: 'CROW POSE STATIC BALANCE', calories: 90, duration: 8, muscleGroup: 'arms', tag: 'Skill', equipment: 'None', details: '3 sets × 20s static hold', defaultSets: 3, targetReps: 20 },
-          { name: 'PIKE PUSHUPS WITH PAUSE', calories: 120, duration: 8, muscleGroup: 'shoulders', tag: 'Skill', equipment: 'None', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 16 ---
-  {
-    id: 'bodyweight_cardio_endurance_builder',
-    name: 'BODYWEIGHT CARDIO & ENDURANCE BUILDER',
-    area: 'Cardio Stamina',
-    tag: 'Fat Loss',
-    equipment: 'No Equipment',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'All Body Types / Stamina Goal',
-    compatibilityNote: 'Sustained steady-state and interval bodyweight cardio for lung capacity.',
-    description: 'Build robust cardiovascular endurance and stamina without needing a treadmill or outdoor track.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: AEROBIC BODYWEIGHT STAMINA',
-        muscleFocus: 'Lung Capacity & Legs',
-        exercises: [
-          { name: 'CONTINUOUS JUMPING JACKS', calories: 180, duration: 12, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 90s steady tempo', defaultSets: 4, targetReps: 90 },
-          { name: 'SHADOW BOXING COMBOS', calories: 150, duration: 10, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 2 mins non-stop combinations', defaultSets: 4, targetReps: 120 },
-          { name: 'HIGH KNEE MARCH SPRINTS', calories: 140, duration: 8, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 45s fast pace', defaultSets: 4, targetReps: 45 },
-          { name: 'SKATER BOUNDS', calories: 130, duration: 8, muscleGroup: 'legs', tag: 'Cardio', equipment: 'None', details: '3 sets × 20 leaps', defaultSets: 3, targetReps: 20 }
-        ]
-      }
-    ]
-  },
-
-  // --- NO EQUIPMENT / BODYWEIGHT PROGRAM 17 ---
-  {
-    id: 'calisthenics_core_fortress',
-    name: 'CALISTHENICS ABS & CORE ROUTINE',
-    area: 'Abdominal Fortress',
-    tag: 'Calisthenics',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'All Body Types / Core Focus',
-    compatibilityNote: 'Core isolation system for abdominal bracing and lower back health.',
-    description: 'Targeted gymnastics core routine engineered to forge bulletproof abs, obliques, and lower back stability.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: GYMNASTICS CORE OVERLOAD',
-        muscleFocus: 'Abs & Obliques',
-        exercises: [
-          { name: 'DRAGON FLAG NEGATIVES & HOLDS', calories: 140, duration: 10, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 8 slow controlled lowering reps', defaultSets: 4, targetReps: 8 },
-          { name: 'HANGING KNEE-TO-ELBOW LIFTS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 12 strict reps', defaultSets: 4, targetReps: 12 },
-          { name: 'HOLLOW BODY ROCKING HOLDS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 45s hollow body compression', defaultSets: 4, targetReps: 45 },
-          { name: 'SIDE PLANK OBLIQUE DIP LIFTS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '3 sets × 15 reps per side', defaultSets: 3, targetReps: 15 }
-        ]
-      }
-    ]
-  },
-
-  // --- EQUIPMENT / GYM PROGRAM 18 ---
-  {
-    id: '7day_fat_burn_metabolic_recomp',
-    name: '7-DAY FAT LOSS & METABOLIC SHRED',
-    area: 'Weight Loss & Calorie Shred',
-    tag: 'Fat Loss',
-    equipment: 'Dumbbells / Bodyweight',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'Overweight / Higher Weight / Fat Loss Goal',
-    compatibilityNote: 'Optimized for high calorie burn, metabolic elevation & fat density reduction without overloading joints.',
-    description: 'High-density metabolic conditioning system engineered to burn max calories, boost insulin sensitivity, and accelerate body fat loss.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: METABOLIC FULL-BODY IGNITION',
-        muscleFocus: 'Full Body Fat Burn',
-        exercises: [
-          { name: 'DUMBBELL THRUSTERS & PRESS', calories: 240, duration: 12, muscleGroup: 'legs', tag: 'Metabolic', equipment: 'Dumbbell', details: '4 sets × 15 reps (Full compound movement)', defaultSets: 4, targetReps: 15 },
-          { name: 'KETTLEBELL / DB SWINGS', calories: 210, duration: 10, muscleGroup: 'back', tag: 'Fat Loss', equipment: 'Dumbbell', details: '4 sets × 20 reps (Explosive hip extension)', defaultSets: 4, targetReps: 20 },
-          { name: 'REVERSE LUNGE TO OVERHEAD PRESS', calories: 180, duration: 10, muscleGroup: 'legs', tag: 'Metabolic', equipment: 'Dumbbell', details: '3 sets × 12 reps per leg', defaultSets: 3, targetReps: 12 },
-          { name: 'MOUNTAIN CLIMBER SPRINTS', calories: 160, duration: 8, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 40 seconds max speed', defaultSets: 4, targetReps: 40 }
-        ]
-      },
-      {
-        dayNumber: 2,
-        title: 'DAY 2: CARDIO INCLINE & CORE COMPRESSION',
-        muscleFocus: 'Endurance & Core Shred',
-        exercises: [
-          { name: 'INCLINE SPEED WALKING / MARCHING', calories: 250, duration: 20, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'Treadmill / None', details: '1 set × 20 mins steady state at 10% incline', defaultSets: 1, targetReps: 20 },
-          { name: 'BICYCLE CRUNCH KNEE CRUNCHES', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 25 reps per side', defaultSets: 4, targetReps: 25 },
-          { name: 'PLANK SHOULDER TAPS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 20 alternating taps', defaultSets: 4, targetReps: 20 },
-          { name: 'JUMPING JACK BURST', calories: 140, duration: 8, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 60 seconds rapid tempo', defaultSets: 4, targetReps: 60 }
-        ]
-      },
-      {
-        dayNumber: 3,
-        title: 'DAY 3: LOWER BODY CALORIC BLAST',
-        muscleFocus: 'Quads, Glutes & Hamstrings',
-        exercises: [
-          { name: 'GOBLET SQUATS', calories: 220, duration: 14, muscleGroup: 'legs', tag: 'Fat Loss', equipment: 'Dumbbell', details: '4 sets × 15 deep chest-up reps', defaultSets: 4, targetReps: 15 },
-          { name: 'STEP-UPS ONTO BOX / CHAIR', calories: 190, duration: 12, muscleGroup: 'legs', tag: 'Metabolic', equipment: 'Box / Bench', details: '4 sets × 12 reps per leg', defaultSets: 4, targetReps: 12 },
-          { name: 'DUMBBELL STIFF-LEG DEADLIFT', calories: 180, duration: 10, muscleGroup: 'back', tag: 'Strength', equipment: 'Dumbbell', details: '4 sets × 12 reps (Hamstring stretch focus)', defaultSets: 4, targetReps: 12 },
-          { name: 'WALL SIT ISOMETRIC HOLD', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Endurance', equipment: 'None', details: '3 sets × 60s holds', defaultSets: 3, targetReps: 60 }
+          enrichExercise({ name: 'JUMPING JACK WARMUP', calories: 50, duration: 5, muscleGroup: 'cardio', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 60s', defaultSets: 2, targetReps: 60, category: 'Warm-Up' }),
+          enrichExercise({ name: 'FULL BODY BURPEE SPRINTS', calories: 200, duration: 12, muscleGroup: 'cardio', tag: 'HIIT', equipment: 'None', details: '5 sets × 15 explosive burpees', defaultSets: 5, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'BEAR CRAWL ISOMETRIC HOLDS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Metabolic', equipment: 'None', details: '4 sets × 45s knee hover hold', defaultSets: 4, targetReps: 45, category: 'Primary Compound' }),
+          enrichExercise({ name: 'SKATER HOP LATERAL JUMPS', calories: 140, duration: 10, muscleGroup: 'legs', tag: 'Cardio', equipment: 'None', details: '4 sets × 18 bounds per side', defaultSets: 4, targetReps: 18, category: 'Accessory' }),
+          enrichExercise({ name: 'HIGH KNEE CARDIO SPRINTS', calories: 130, duration: 8, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 45s sprint', defaultSets: 4, targetReps: 45, category: 'Accessory' }),
+          enrichExercise({ name: 'HOLLOW BODY COMPRESSION HOLDS', calories: 90, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 40s hold', defaultSets: 3, targetReps: 40, category: 'Finisher' }),
+          enrichExercise({ name: 'WORLD GREATEST LUNGE STRETCH', calories: 40, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '2 sets × 8 per side', defaultSets: 2, targetReps: 8, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 4,
-        title: 'DAY 4: UPPER BODY FAT-MELT CIRCUIT',
-        muscleFocus: 'Chest, Back & Shoulders',
+        title: 'DAY 4: CORE FORTRESS & ISOMETRIC ENDURANCE',
+        muscleFocus: 'Core Bracing, Obliques & Lower Back',
         exercises: [
-          { name: 'PUSHUP TO RENEGADE ROW', calories: 230, duration: 12, muscleGroup: 'chest', tag: 'Metabolic', equipment: 'Dumbbell', details: '4 sets × 10 complex reps', defaultSets: 4, targetReps: 10 },
-          { name: 'DUMBBELL ARNOLD PRESS', calories: 150, duration: 10, muscleGroup: 'shoulders', tag: 'Fat Loss', equipment: 'Dumbbell', details: '4 sets × 12 rotational press reps', defaultSets: 4, targetReps: 12 },
-          { name: 'BENT-OVER DUMBBELL ROWS', calories: 170, duration: 10, muscleGroup: 'back', tag: 'Strength', equipment: 'Dumbbell', details: '4 sets × 15 reps (Strict back contraction)', defaultSets: 4, targetReps: 15 },
-          { name: 'SHADOW BOXING SPEED PUNCHES', calories: 130, duration: 8, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '3 sets × 90 seconds continuous punches', defaultSets: 3, targetReps: 90 }
-        ]
-      },
-      {
-        dayNumber: 5,
-        title: 'DAY 5: HIGH-DENSITY HIIT SPRINT DENSITY',
-        muscleFocus: 'Full Body Cardiovascular Shred',
-        exercises: [
-          { name: 'BURPEE BOX STEP-OVERS', calories: 260, duration: 15, muscleGroup: 'cardio', tag: 'HIIT', equipment: 'Box / Bench', details: '5 sets × 12 explosive reps', defaultSets: 5, targetReps: 12 },
-          { name: 'HIGH KNEE CARDIO SPRINTS', calories: 170, duration: 10, muscleGroup: 'cardio', tag: 'Cardio', equipment: 'None', details: '4 sets × 45s fast pace', defaultSets: 4, targetReps: 45 },
-          { name: 'SQUAT JUMP TUCK LANDINGS', calories: 180, duration: 10, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'PLANK HOLD TO HOLLOW BRACE', calories: 90, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 60s holds', defaultSets: 3, targetReps: 60 }
-        ]
-      },
-      {
-        dayNumber: 6,
-        title: 'DAY 6: METABOLIC PUSH & PULL COMPLEX',
-        muscleFocus: 'Chest, Arms & Lats',
-        exercises: [
-          { name: 'DUMBBELL FLOOR PRESS', calories: 180, duration: 10, muscleGroup: 'chest', tag: 'Fat Loss', equipment: 'Dumbbell', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'DUMBBELL BICEP CURL TO HAMMER PRESS', calories: 160, duration: 10, muscleGroup: 'arms', tag: 'Fat Loss', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'TRICEP CHAIR DIPS', calories: 130, duration: 8, muscleGroup: 'arms', tag: 'Metabolic', equipment: 'Chair', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 },
-          { name: 'RUSSIAN TWIST WITH DB', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'Dumbbell', details: '4 sets × 20 twists', defaultSets: 4, targetReps: 20 }
-        ]
-      },
-      {
-        dayNumber: 7,
-        title: 'DAY 7: ACTIVE RECOVERY & METABOLIC RESET',
-        muscleFocus: 'Flexibility & Low Impact Recovery',
-        exercises: [
-          { name: 'BRISK OUTDOOR WALK / TREADMILL', calories: 180, duration: 25, muscleGroup: 'cardio', tag: 'Recovery', equipment: 'None', details: '1 set × 25 mins steady pace', defaultSets: 1, targetReps: 25 },
-          { name: 'THORACIC CAT-COW FLOW', calories: 50, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 fluid cycles', defaultSets: 3, targetReps: 12 },
-          { name: 'HIP FLEXOR & PIGEON STRETCH', calories: 50, duration: 8, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 60s per side', defaultSets: 3, targetReps: 60 }
+          enrichExercise({ name: 'STANDING CORE TWISTS', calories: 30, duration: 4, muscleGroup: 'core', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 20 twists', defaultSets: 2, targetReps: 20, category: 'Warm-Up' }),
+          enrichExercise({ name: 'V-UP ABDOMINAL CRUNCHES', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 15 V-ups', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'DOORWAY BODYWEIGHT ROWS', calories: 120, duration: 10, muscleGroup: 'back', tag: 'Back', equipment: 'None', details: '4 sets × 15 door rows', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'SIDE PLANK OBLIQUE DIP LIFTS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Obliques', equipment: 'None', details: '3 sets × 15 per side', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'PRONE SUPERMAN LAT EXTENSIONS', calories: 100, duration: 8, muscleGroup: 'back', tag: 'Posterior', equipment: 'None', details: '3 sets × 18 reps with hold', defaultSets: 3, targetReps: 18, category: 'Accessory' }),
+          enrichExercise({ name: 'FOREARM PLANK RIGID HOLD', calories: 90, duration: 6, muscleGroup: 'core', tag: 'Hold', equipment: 'None', details: '3 sets × 60s hold', defaultSets: 3, targetReps: 60, category: 'Finisher' }),
+          enrichExercise({ name: 'COBRA spine STRETCH', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s stretch', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       }
     ]
   },
 
-  // --- EQUIPMENT / GYM PROGRAM 19 ---
+  // =========================================================================
+  // PROGRAM 3: NEW! 8-WEEK NO-EQUIPMENT CALISTHENICS SKILL & ISOMETRIC MASTERY
+  // 100% PURE BODYWEIGHT - GYMNASTIC LEVERS, HANDSTANDS & PISTOL SQUATS
+  // =========================================================================
   {
-    id: '7day_mass_gainer_hypertrophy',
-    name: '7-DAY SKINNY-TO-MUSCLE MASS GAINER',
-    area: 'Muscle Hypertrophy & Bulking',
+    id: '8week_calisthenics_skill_and_isometric_mastery',
+    name: '8-WEEK CALISTHENICS SKILL & ISOMETRIC MASTERY',
+    area: '2-Month Advanced Calisthenics & Balance',
+    tag: 'Skill Mastery',
+    equipment: 'No Equipment',
+    targetGoal: 'calisthenics',
+    durationWeeks: 8,
+    daysPerWeek: 4,
+    recommendedBodyType: 'Athletic / Intermediate Calisthenics Practitioners',
+    compatibilityNote: '100% equipment-free skill progressions. Master body control, single-leg pistol squats, and handstand shoulder power.',
+    description: 'Advanced 8-Week bodyweight mastery protocol focusing on handstand wall climbs, pistol squat progressions, and L-sit core compression.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: HANDSTAND WALL CLIMB & OVERHEAD POWER',
+        muscleFocus: 'Deltoids, Upper Traps & Handstand Balance',
+        exercises: [
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 40, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'WALL WALK-UPS TO HANDSTAND HOLD', calories: 140, duration: 12, muscleGroup: 'shoulders', tag: 'Skill', equipment: 'None', details: '4 sets × 30s wall hold', defaultSets: 4, targetReps: 30, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PIKE PUSHUPS (SHOULDER PRESS)', calories: 130, duration: 10, muscleGroup: 'shoulders', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'DECLINE CHAIR PUSHUPS', calories: 110, duration: 8, muscleGroup: 'chest', tag: 'Chest', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'PLANK-TO-PUSHUP COMMANDOS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 12 up-downs', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'PLANK SHOULDER TAPS', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Finisher', equipment: 'None', details: '3 sets × 20 taps', defaultSets: 3, targetReps: 20, category: 'Finisher' }),
+          enrichExercise({ name: 'CROSS BODY SHOULDER DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'shoulders', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s per side', defaultSets: 2, targetReps: 45, category: 'Mobility' })
+        ]
+      },
+      {
+        dayNumber: 2,
+        title: 'DAY 2: UNILATERAL PISTOL SQUAT & SINGLE-LEG POWER',
+        muscleFocus: 'Quadriceps, Glutes, Hamstrings & Balance',
+        exercises: [
+          enrichExercise({ name: 'STANDING BODYWEIGHT LEG SWINGS', calories: 40, duration: 5, muscleGroup: 'legs', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 swings per leg', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'ASSISTED PISTOL SQUAT PROGRESSION', calories: 150, duration: 12, muscleGroup: 'legs', tag: 'Skill', equipment: 'None', details: '4 sets × 8 reps per leg', defaultSets: 4, targetReps: 8, category: 'Primary Compound' }),
+          enrichExercise({ name: 'BULGARIAN BODYWEIGHT SPLIT SQUATS', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Strength', equipment: 'None', details: '4 sets × 12 reps per leg', defaultSets: 4, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'GLUTE BRIDGES WITH 2S HOLD', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Glutes', equipment: 'None', details: '4 sets × 18 reps', defaultSets: 4, targetReps: 18, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC WALL SITS', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Isometric', equipment: 'None', details: '3 sets × 60s hold', defaultSets: 3, targetReps: 60, category: 'Accessory' }),
+          enrichExercise({ name: 'SINGLE-LEG CALF RAISES', calories: 80, duration: 8, muscleGroup: 'legs', tag: 'Calves', equipment: 'None', details: '4 sets × 20 per calf', defaultSets: 4, targetReps: 20, category: 'Finisher' }),
+          enrichExercise({ name: 'HAMSTRING & HIP FLEXOR STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
+        ]
+      },
+      {
+        dayNumber: 3,
+        title: 'DAY 3: HORIZONTAL BODYWEIGHT PULL & POSTERIOR CHAIN',
+        muscleFocus: 'Lats, Rhomboids, Rear Delts & Lower Back',
+        exercises: [
+          enrichExercise({ name: 'THORACIC CAT-COW FLOW', calories: 40, duration: 5, muscleGroup: 'back', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 12 reps', defaultSets: 2, targetReps: 12, category: 'Warm-Up' }),
+          enrichExercise({ name: 'DOORWAY BODYWEIGHT ROWS', calories: 140, duration: 12, muscleGroup: 'back', tag: 'Skill Pull', equipment: 'None', details: '4 sets × 15 steep rows', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PRONE SUPERMAN LAT EXTENSIONS', calories: 120, duration: 10, muscleGroup: 'back', tag: 'Posterior', equipment: 'None', details: '4 sets × 20 reps with 2s hold', defaultSets: 4, targetReps: 20, category: 'Primary Compound' }),
+          enrichExercise({ name: 'REVERSE SHOULDER FLY EXTENSIONS', calories: 90, duration: 8, muscleGroup: 'shoulders', tag: 'Rear Delt', equipment: 'None', details: '3 sets × 15 flys', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC BICEP TENSION HOLDS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Isometric', equipment: 'None', details: '3 sets × 30s pull hold', defaultSets: 3, targetReps: 30, category: 'Accessory' }),
+          enrichExercise({ name: 'PRONE COBRA BACK EXTENSION', calories: 80, duration: 6, muscleGroup: 'back', tag: 'Finisher', equipment: 'None', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15, category: 'Finisher' }),
+          enrichExercise({ name: 'CHILD POSE LAT DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
+        ]
+      },
+      {
+        dayNumber: 4,
+        title: 'DAY 4: L-SIT CORE COMPRESSION & HOLLOW HOLDS',
+        muscleFocus: 'L-Sit Gymnastics, Rectus Abdominis & Obliques',
+        exercises: [
+          enrichExercise({ name: 'STANDING CORE TWISTS', calories: 30, duration: 4, muscleGroup: 'core', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 20 twists', defaultSets: 2, targetReps: 20, category: 'Warm-Up' }),
+          enrichExercise({ name: 'L-SIT TUCKED FLOOR PRESS', calories: 130, duration: 10, muscleGroup: 'core', tag: 'Gymnastic', equipment: 'None', details: '4 sets × 20s suspended hold', defaultSets: 4, targetReps: 20, category: 'Primary Compound' }),
+          enrichExercise({ name: 'HOLLOW BODY COMPRESSION HOLDS', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Hollow', equipment: 'None', details: '4 sets × 45s compression hold', defaultSets: 4, targetReps: 45, category: 'Primary Compound' }),
+          enrichExercise({ name: 'V-UP ABDOMINAL CRUNCHES', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 15 V-ups', defaultSets: 4, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'SIDE PLANK OBLIQUE DIP LIFTS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Obliques', equipment: 'None', details: '3 sets × 15 per side', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'FOREARM PLANK RIGID HOLD', calories: 90, duration: 6, muscleGroup: 'core', tag: 'Finisher', equipment: 'None', details: '3 sets × 60s hold', defaultSets: 3, targetReps: 60, category: 'Finisher' }),
+          enrichExercise({ name: 'COBRA spine STRETCH', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s stretch', defaultSets: 2, targetReps: 45, category: 'Mobility' })
+        ]
+      }
+    ]
+  },
+
+  // =========================================================================
+  // PROGRAM 4: NEW! 4-WEEK MORNING MOBILITY & POSTURE RESET (1 MONTH)
+  // 100% PURE BODYWEIGHT - GENTLE DESK RECOVERY, JOINT MOBILITY & FLEXIBILITY
+  // =========================================================================
+  {
+    id: '4week_morning_mobility_posture_flow',
+    name: '4-WEEK MORNING MOBILITY & POSTURE RESET',
+    area: '1-Month Daily Posture & Joint Decompression',
+    tag: 'Mobility Flow',
+    equipment: 'No Equipment',
+    targetGoal: 'joint_care',
+    durationWeeks: 4,
+    daysPerWeek: 3,
+    recommendedBodyType: 'Desk Workers / Office Workers / Beginners / Recovery Days',
+    compatibilityNote: '100% equipment-free gentle mobility flow. Ideal for morning energy, desk posture reset, and spinal alignment.',
+    description: 'Gentle 4-Week zero-impact bodyweight mobility system designed to un-hunch shoulders, loosen tight hips, and decompress the spine.',
+    days: [
+      {
+        dayNumber: 1,
+        title: 'DAY 1: THORACIC SPINE & SHOULDER UN-HUNCH FLOW',
+        muscleFocus: 'Thoracic Spine, Neck, Upper Back & Shoulders',
+        exercises: [
+          enrichExercise({ name: 'THORACIC CAT-COW FLOW', calories: 40, duration: 6, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 smooth flows', defaultSets: 3, targetReps: 12, category: 'Warm-Up' }),
+          enrichExercise({ name: 'BIRD DOG BALANCE EXTENSIONS', calories: 70, duration: 8, muscleGroup: 'core', tag: 'Posture', equipment: 'None', details: '3 sets × 12 per side', defaultSets: 3, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PRONE SUPERMAN LAT EXTENSIONS', calories: 80, duration: 8, muscleGroup: 'back', tag: 'Posture', equipment: 'None', details: '3 sets × 15 gentle holds', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'REVERSE SHOULDER FLY EXTENSIONS', calories: 70, duration: 6, muscleGroup: 'shoulders', tag: 'Posture', equipment: 'None', details: '3 sets × 12 light squeezes', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'CHILD POSE LAT DECOMPRESSION', calories: 30, duration: 6, muscleGroup: 'back', tag: 'Decompress', equipment: 'None', details: '3 sets × 60s holds', defaultSets: 3, targetReps: 60, category: 'Finisher' }),
+          enrichExercise({ name: 'CHEST & TRICEP DOORWAY STRETCH', calories: 30, duration: 5, muscleGroup: 'chest', tag: 'Stretch', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
+        ]
+      },
+      {
+        dayNumber: 2,
+        title: 'DAY 2: DEEP HIP OPENER & ANKLE AGILITY RESET',
+        muscleFocus: 'Hip Flexors, Adductors, Glutes & Ankle Range',
+        exercises: [
+          enrichExercise({ name: 'STANDING BODYWEIGHT LEG SWINGS', calories: 40, duration: 5, muscleGroup: 'legs', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 swings per leg', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'WORLD GREATEST LUNGE STRETCH', calories: 60, duration: 8, muscleGroup: 'legs', tag: 'Hip Flow', equipment: 'None', details: '3 sets × 8 per side', defaultSets: 3, targetReps: 8, category: 'Primary Compound' }),
+          enrichExercise({ name: 'GLUTE BRIDGES WITH 2S HOLD', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Glute Activation', equipment: 'None', details: '3 sets × 15 smooth bridges', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'CHAIR ASSISTED SQUATS', calories: 80, duration: 8, muscleGroup: 'legs', tag: 'Mobility Squat', equipment: 'None', details: '3 sets × 12 sit-to-stands', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'QUAD & QUADRICEPS MAT STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Stretch', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' }),
+          enrichExercise({ name: 'SEATED HAMSTRING STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Stretch', equipment: 'Mat', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
+        ]
+      },
+      {
+        dayNumber: 3,
+        title: 'DAY 3: FULL BODY MORNING ENERGY & SPINE ALIGNMENT',
+        muscleFocus: 'Full Body Flexibility & Spinal Length',
+        exercises: [
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 40, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'WORLD GREATEST LUNGE STRETCH', calories: 60, duration: 8, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 8 per side', defaultSets: 3, targetReps: 8, category: 'Primary Compound' }),
+          enrichExercise({ name: 'BEAR CRAWL ISOMETRIC HOLDS', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Bracing', equipment: 'None', details: '3 sets × 30s hover', defaultSets: 3, targetReps: 30, category: 'Accessory' }),
+          enrichExercise({ name: 'PRONE COBRA BACK EXTENSION', calories: 70, duration: 6, muscleGroup: 'back', tag: 'Spine', equipment: 'None', details: '3 sets × 12 holds', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'COBRA spine STRETCH', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Stretch', equipment: 'None', details: '2 sets × 60s stretch', defaultSets: 2, targetReps: 60, category: 'Mobility' }),
+          enrichExercise({ name: 'CHILD POSE LAT DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Decompress', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
+        ]
+      }
+    ]
+  },
+
+  // =========================================================================
+  // PROGRAM 5: 8-WEEK SKINNY-TO-MUSCLE MASS GAINER HYPERTROPHY (2 MONTHS)
+  // FULL GYM / DUMBBELL / BARBELL
+  // =========================================================================
+  {
+    id: '8week_mass_gainer_hypertrophy',
+    name: '8-WEEK SKINNY-TO-MUSCLE MASS GAINER',
+    area: '2-Month Bulking & Muscle Mass',
     tag: 'Muscle Gain',
     equipment: 'Barbell / Dumbbell / Gym',
     targetGoal: 'muscle_gain',
-    recommendedBodyType: 'Slim Build / Underweight / Muscle Bulking Goal',
-    compatibilityNote: 'High mechanical tension, compound overload, and progressive hypertrophy designed for slim builds seeking mass gain.',
-    description: 'Heavy compound mass-building protocol engineered for hardgainers and slim builds to stimulate rapid skeletal muscle hypertrophy.',
+    durationWeeks: 8,
+    daysPerWeek: 4,
+    recommendedBodyType: 'Slim Build / Underweight / Hardgainers',
+    compatibilityNote: 'Heavy compound overload with structured exercises per workout day for maximum 2-month muscle hypertrophy.',
+    description: 'Structured 8-week compound mass-building protocol engineered with progressive gym overload to stimulate skeletal muscle growth.',
     days: [
       {
         dayNumber: 1,
-        title: 'DAY 1: HEAVY CHEST MASS OVERLOAD',
-        muscleFocus: 'Pectorals & Upper Body Thickness',
+        title: 'DAY 1: HEAVY CHEST & TRICEP MASS OVERLOAD',
+        muscleFocus: 'Pectorals, Anterior Deltoids & Triceps',
         exercises: [
-          { name: 'BARBELL BENCH PRESS', calories: 230, duration: 15, muscleGroup: 'chest', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 6 heavy reps (Max power, 2m rest)', defaultSets: 5, targetReps: 6 },
-          { name: 'INCLINE DUMBBELL CHEST PRESS', calories: 190, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 8 heavy reps (Full stretch at bottom)', defaultSets: 4, targetReps: 8 },
-          { name: 'WEIGHTED CHEST DIPS', calories: 160, duration: 10, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Bodyweight / Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'DUMBBELL FLY CROSSOVERS', calories: 120, duration: 8, muscleGroup: 'chest', tag: 'Isolation', equipment: 'Dumbbell', details: '3 sets × 12 reps (Squeeze chest at top)', defaultSets: 3, targetReps: 12 }
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 40, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps light', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'BARBELL BENCH PRESS', calories: 230, duration: 15, muscleGroup: 'chest', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 6 heavy reps (Max power, 2m rest)', defaultSets: 5, targetReps: 6, category: 'Primary Compound' }),
+          enrichExercise({ name: 'STANDARD FLOOR PUSHUPS', calories: 120, duration: 8, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'None', details: '4 sets × 15 reps (Full stretch)', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'CHAIR / BENCH TRICEP DIPS', calories: 120, duration: 8, muscleGroup: 'arms', tag: 'Triceps', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'DIAMOND TRICEP PUSHUPS', calories: 110, duration: 8, muscleGroup: 'arms', tag: 'Triceps', equipment: 'None', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12, category: 'Finisher' }),
+          enrichExercise({ name: 'CHEST & TRICEP DOORWAY STRETCH', calories: 30, duration: 5, muscleGroup: 'chest', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s holds', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 2,
-        title: 'DAY 2: LAT DENSITY & HEAVY DEADLIFTS',
-        muscleFocus: 'Lats, Upper Back & Biceps',
+        title: 'DAY 2: LAT DENSITY & HEAVY DEADLIFT OVERLOAD',
+        muscleFocus: 'Lats, Rhomboids, Traps & Biceps',
         exercises: [
-          { name: 'CONVENTIONAL BARBELL DEADLIFT', calories: 290, duration: 18, muscleGroup: 'back', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 5 heavy reps (Spine neutral, drive hips)', defaultSets: 5, targetReps: 5 },
-          { name: 'WEIGHTED PULL-UPS / LAT PULLDOWN', calories: 180, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Barbell / Cable', details: '4 sets × 8 heavy reps', defaultSets: 4, targetReps: 8 },
-          { name: 'BARBELL BENT-OVER ROWS', calories: 200, duration: 12, muscleGroup: 'back', tag: 'Mass Build', equipment: 'Barbell', details: '4 sets × 8 heavy reps', defaultSets: 4, targetReps: 8 },
-          { name: 'STANDING BARBELL BICEP CURLS', calories: 130, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 10 strict reps', defaultSets: 4, targetReps: 10 }
+          enrichExercise({ name: 'THORACIC CAT-COW FLOW', calories: 40, duration: 5, muscleGroup: 'back', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps light', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'BARBELL DEADLIFT', calories: 290, duration: 18, muscleGroup: 'back', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 5 heavy reps (Neutral spine)', defaultSets: 5, targetReps: 5, category: 'Primary Compound' }),
+          enrichExercise({ name: 'DOORWAY BODYWEIGHT ROWS', calories: 150, duration: 10, muscleGroup: 'back', tag: 'Lats', equipment: 'None', details: '4 sets × 15 door rows', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'PRONE SUPERMAN LAT EXTENSIONS', calories: 120, duration: 8, muscleGroup: 'back', tag: 'Upper Back', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC BICEP TENSION HOLDS', calories: 110, duration: 8, muscleGroup: 'arms', tag: 'Biceps', equipment: 'None', details: '3 sets × 30s holds', defaultSets: 3, targetReps: 30, category: 'Finisher' }),
+          enrichExercise({ name: 'CHILD POSE LAT DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 3,
-        title: 'DAY 3: QUAD MASS & HEAVY SQUATS',
-        muscleFocus: 'Quads, Glutes & Calves',
+        title: 'DAY 3: QUAD MASS & HEAVY BARBELL SQUATS',
+        muscleFocus: 'Quads, Glutes & Hamstrings',
         exercises: [
-          { name: 'BARBELL BACK SQUATS', calories: 300, duration: 20, muscleGroup: 'legs', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 6 heavy reps below 90 degrees', defaultSets: 5, targetReps: 6 },
-          { name: 'LEG PRESS MACHINE OVERLOAD', calories: 220, duration: 12, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Machine', details: '4 sets × 10 heavy reps', defaultSets: 4, targetReps: 10 },
-          { name: 'ROMANIAN DEADLIFT (HAMSTRINGS)', calories: 190, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'STANDING HEAVY CALF RAISES', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Isolation', equipment: 'Machine', details: '4 sets × 15 reps (2s top peak hold)', defaultSets: 4, targetReps: 15 }
+          enrichExercise({ name: 'STANDING BODYWEIGHT LEG SWINGS', calories: 40, duration: 5, muscleGroup: 'legs', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 reps light', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'BARBELL BACK SQUATS', calories: 300, duration: 20, muscleGroup: 'legs', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 6 heavy reps below 90°', defaultSets: 5, targetReps: 6, category: 'Primary Compound' }),
+          enrichExercise({ name: 'BULGARIAN BODYWEIGHT SPLIT SQUATS', calories: 140, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'None', details: '4 sets × 12 per leg', defaultSets: 4, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'GLUTE BRIDGES WITH 2S HOLD', calories: 110, duration: 8, muscleGroup: 'legs', tag: 'Glutes', equipment: 'None', details: '4 sets × 18 reps', defaultSets: 4, targetReps: 18, category: 'Accessory' }),
+          enrichExercise({ name: 'SINGLE-LEG CALF RAISES', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Calves', equipment: 'None', details: '4 sets × 20 per calf', defaultSets: 4, targetReps: 20, category: 'Finisher' }),
+          enrichExercise({ name: 'HAMSTRING & HIP FLEXOR STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '2 sets × 60s holds', defaultSets: 2, targetReps: 60, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 4,
-        title: 'DAY 4: SHOULDER CANNON PRESS & DELTS',
+        title: 'DAY 4: SHOULDER CANNON PRESS & DELT DENSITY',
         muscleFocus: 'Anterior, Lateral & Rear Deltoids',
         exercises: [
-          { name: 'BARBELL OVERHEAD MILITARY PRESS', calories: 200, duration: 12, muscleGroup: 'shoulders', tag: 'Mass Build', equipment: 'Barbell', details: '5 sets × 6 heavy strict reps', defaultSets: 5, targetReps: 6 },
-          { name: 'HEAVY DUMBBELL LATERAL RAISES', calories: 140, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'FACE PULLS WITH CABLE ROPE', calories: 130, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 15 reps (Rear delt activation)', defaultSets: 4, targetReps: 15 },
-          { name: 'HEAVY DUMBBELL SHRUGS', calories: 120, duration: 8, muscleGroup: 'shoulders', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 5,
-        title: 'DAY 5: ARMS MASS & PEAK ISOLATION',
-        muscleFocus: 'Biceps & Triceps Mass',
-        exercises: [
-          { name: 'EZ-BAR SKULLCRUSHERS', calories: 160, duration: 10, muscleGroup: 'arms', tag: 'Mass Build', equipment: 'Barbell', details: '4 sets × 10 heavy reps', defaultSets: 4, targetReps: 10 },
-          { name: 'INCLINE DUMBBELL CURLS', calories: 140, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps (Deep stretch)', defaultSets: 4, targetReps: 10 },
-          { name: 'TRICEP CABLE ROPE PUSHDOWNS', calories: 140, duration: 8, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'DUMBBELL HAMMER CURLS', calories: 120, duration: 8, muscleGroup: 'arms', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 12 reps per arm', defaultSets: 4, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 6,
-        title: 'DAY 6: POSTERIOR CHAIN & POWER CLEANS',
-        muscleFocus: 'Hamstrings, Glutes & Trap Power',
-        exercises: [
-          { name: 'BARBELL POWER CLEANS', calories: 250, duration: 15, muscleGroup: 'legs', tag: 'Power', equipment: 'Barbell', details: '4 sets × 5 reps (Explosive triple extension)', defaultSets: 4, targetReps: 5 },
-          { name: 'BARBELL HIP THRUSTS', calories: 210, duration: 12, muscleGroup: 'legs', tag: 'Mass Build', equipment: 'Barbell', details: '4 sets × 10 heavy reps', defaultSets: 4, targetReps: 10 },
-          { name: 'LYING LEG CURL MACHINE', calories: 140, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Machine', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'HANGING LEG RAISES', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'Pullup Bar', details: '4 sets × 12 strict reps', defaultSets: 4, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 7,
-        title: 'DAY 7: MASS RECOVERY & CORE BRACING',
-        muscleFocus: 'Rest, Regeneration & Ab Strength',
-        exercises: [
-          { name: 'AB WHEEL ROLLOUTS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'Ab Wheel / None', details: '4 sets × 10 controlled reps', defaultSets: 4, targetReps: 10 },
-          { name: 'HEAVY FARMER CARRY WALKS', calories: 160, duration: 10, muscleGroup: 'core', tag: 'Grip & Core', equipment: 'Dumbbell', details: '4 sets × 40 meters heavy walk', defaultSets: 4, targetReps: 40 },
-          { name: 'FULL BODY FOAM ROLLING & STRETCH', calories: 60, duration: 15, muscleGroup: 'back', tag: 'Recovery', equipment: 'Foam Roller', details: '1 set × 15 mins deep myofascial release', defaultSets: 1, targetReps: 15 }
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 40, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 15 rotations', defaultSets: 2, targetReps: 15, category: 'Warm-Up' }),
+          enrichExercise({ name: 'PIKE PUSHUPS (SHOULDER PRESS)', calories: 150, duration: 10, muscleGroup: 'shoulders', tag: 'Delts', equipment: 'None', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'WALL WALK-UPS TO HANDSTAND HOLD', calories: 130, duration: 8, muscleGroup: 'shoulders', tag: 'Hold', equipment: 'None', details: '3 sets × 30s wall hold', defaultSets: 3, targetReps: 30, category: 'Primary Compound' }),
+          enrichExercise({ name: 'REVERSE SHOULDER FLY EXTENSIONS', calories: 100, duration: 8, muscleGroup: 'shoulders', tag: 'Rear Delts', equipment: 'None', details: '3 sets × 15 flys', defaultSets: 3, targetReps: 15, category: 'Accessory' }),
+          enrichExercise({ name: 'PLANK SHOULDER TAPS', calories: 90, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 20 taps', defaultSets: 3, targetReps: 20, category: 'Finisher' }),
+          enrichExercise({ name: 'CROSS BODY SHOULDER DECOMPRESSION', calories: 30, duration: 5, muscleGroup: 'shoulders', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s per side', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       }
     ]
   },
 
-  // --- EQUIPMENT / GYM PROGRAM 20 ---
+  // =========================================================================
+  // PROGRAM 6: 4-WEEK KNEE-SAFE LOW-IMPACT & JOINT CARE (1 MONTH)
+  // LOW IMPACT / MACHINES / BANDS / BODYWEIGHT
+  // =========================================================================
   {
-    id: '5day_low_impact_joint_care',
-    name: '5-DAY LOW-IMPACT JOINT CARE & MOBILITY',
-    area: 'Joint Protection & Easy Entry',
+    id: '4week_low_impact_joint_care',
+    name: '4-WEEK KNEE-SAFE LOW-IMPACT & JOINT CARE',
+    area: 'Joint Protection & Gentle Entry',
     tag: 'Joint Safe',
     equipment: 'Low Impact / Machines / Bands',
     targetGoal: 'joint_care',
-    recommendedBodyType: 'High Body Weight / Joint Concerns / Beginners',
-    compatibilityNote: 'Zero high-impact jumping, knee-friendly lever movements, and controlled tempo exercise for absolute joint safety.',
-    description: 'Joint-protective fitness system engineered for high body weight individuals, beginners, or those recovering from joint strain.',
+    durationWeeks: 4,
+    daysPerWeek: 4,
+    recommendedBodyType: 'Beginners / High Body Weight / Joint Concerns',
+    compatibilityNote: 'Zero high-impact jumping, knee-friendly lever movements, and smooth control for absolute joint safety.',
+    description: 'Joint-protective fitness system engineered for high body weight individuals, beginners, or joint strain recovery.',
     days: [
       {
         dayNumber: 1,
-        title: 'DAY 1: LOW-IMPACT PUSH & MACHINE PRESS',
+        title: 'DAY 1: LOW-IMPACT CHEST & SEATED PRESS',
         muscleFocus: 'Chest, Shoulders & Triceps (Joint-Safe)',
         exercises: [
-          { name: 'SEATED CHEST PRESS MACHINE', calories: 140, duration: 12, muscleGroup: 'chest', tag: 'Joint Safe', equipment: 'Machine', details: '4 sets × 12 smooth controlled reps', defaultSets: 4, targetReps: 12 },
-          { name: 'INCLINE DUMBBELL PRESS (LIGHT)', calories: 120, duration: 10, muscleGroup: 'chest', tag: 'Controlled', equipment: 'Dumbbell', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 },
-          { name: 'SEATED DUMBBELL OVERHEAD PRESS', calories: 110, duration: 10, muscleGroup: 'shoulders', tag: 'Joint Safe', equipment: 'Dumbbell', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 },
-          { name: 'TRICEP CABLE PUSHDOWNS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Joint Safe', equipment: 'Cable', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 }
+          enrichExercise({ name: 'ARM CIRCLES & SHOULDER TAPS', calories: 30, duration: 5, muscleGroup: 'shoulders', tag: 'Warm-Up', equipment: 'None', details: '2 sets × 12 smooth circles', defaultSets: 2, targetReps: 12, category: 'Warm-Up' }),
+          enrichExercise({ name: 'STANDARD FLOOR PUSHUPS', calories: 110, duration: 10, muscleGroup: 'chest', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 12 smooth reps (On knees if needed)', defaultSets: 3, targetReps: 12, category: 'Primary Compound' }),
+          enrichExercise({ name: 'CHAIR / BENCH TRICEP DIPS', calories: 90, duration: 8, muscleGroup: 'arms', tag: 'Triceps', equipment: 'None', details: '3 sets × 12 smooth reps', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'FOREARM PLANK RIGID HOLD', calories: 70, duration: 6, muscleGroup: 'core', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 30s holds', defaultSets: 3, targetReps: 30, category: 'Finisher' }),
+          enrichExercise({ name: 'CHEST & TRICEP DOORWAY STRETCH', calories: 30, duration: 5, muscleGroup: 'chest', tag: 'Mobility', equipment: 'None', details: '2 sets × 45s holds', defaultSets: 2, targetReps: 45, category: 'Mobility' })
         ]
       },
       {
         dayNumber: 2,
-        title: 'DAY 2: SEATED PULL & LAT ENGAGEMENT',
-        muscleFocus: 'Back, Lats & Biceps',
+        title: 'DAY 2: KNEE-FRIENDLY LOWER BODY & GLUTE ACTIVATION',
+        muscleFocus: 'Quads, Glutes & Hamstrings (Zero Jumps)',
         exercises: [
-          { name: 'SEATED CABLE ROW (NEUTRAL GRIP)', calories: 150, duration: 12, muscleGroup: 'back', tag: 'Joint Safe', equipment: 'Cable', details: '4 sets × 12 reps (Smooth squeeze, zero jerk)', defaultSets: 4, targetReps: 12 },
-          { name: 'WIDE GRIP LAT PULLDOWN', calories: 140, duration: 12, muscleGroup: 'back', tag: 'Joint Safe', equipment: 'Cable', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'SEATED DUMBBELL BICEP CURLS', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Joint Safe', equipment: 'Dumbbell', details: '3 sets × 12 reps', defaultSets: 3, targetReps: 12 },
-          { name: 'FACE PULLS WITH RESISTANCE BAND', calories: 90, duration: 8, muscleGroup: 'shoulders', tag: 'Joint Safe', equipment: 'Band', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 }
-        ]
-      },
-      {
-        dayNumber: 3,
-        title: 'DAY 3: KNEE-FRIENDLY LOWER BODY & GLUTES',
-        muscleFocus: 'Quads & Glute Activation (No Jumps)',
-        exercises: [
-          { name: 'GLUTE BRIDGES ON MAT', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'None', details: '4 sets × 15 reps with 2s squeeze at top', defaultSets: 4, targetReps: 15 },
-          { name: 'SEATED LEG EXTENSION MACHINE', calories: 120, duration: 10, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'Machine', details: '3 sets × 12 smooth reps', defaultSets: 3, targetReps: 12 },
-          { name: 'SEATED HAMSTRING CURL MACHINE', calories: 120, duration: 10, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'Machine', details: '3 sets × 12 smooth reps', defaultSets: 3, targetReps: 12 },
-          { name: 'STANDING SEATED CALF RAISES', calories: 80, duration: 8, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'Machine / Bench', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 }
-        ]
-      },
-      {
-        dayNumber: 4,
-        title: 'DAY 4: LOW-IMPACT CARDIO & CORE STABILITY',
-        muscleFocus: 'Heart Health & Core (Zero Impact)',
-        exercises: [
-          { name: 'STATIONARY RECUMBENT BIKE / ROWING', calories: 180, duration: 20, muscleGroup: 'cardio', tag: 'Low Impact', equipment: 'Stationary Bike', details: '1 set × 20 mins moderate cadence', defaultSets: 1, targetReps: 20 },
-          { name: 'BIRD-DOG CORE STABILIZATION', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Joint Safe', equipment: 'None', details: '4 sets × 10 reps per side', defaultSets: 4, targetReps: 10 },
-          { name: 'DEADBUG COMPRESSION HOLDS', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Joint Safe', equipment: 'None', details: '4 sets × 10 reps per side', defaultSets: 4, targetReps: 10 },
-          { name: 'STANDING SIDE BENDS WITH DB', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Joint Safe', equipment: 'Dumbbell', details: '3 sets × 12 reps per side', defaultSets: 3, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 5,
-        title: 'DAY 5: FULL BODY DEEP FLEXIBILITY & FLOW',
-        muscleFocus: 'Full Body Mobility & Spine Care',
-        exercises: [
-          { name: 'SEATED HAMSTRING & CALF STRETCH', calories: 40, duration: 8, muscleGroup: 'legs', tag: 'Mobility', equipment: 'Mat', details: '3 sets × 60s holds per leg', defaultSets: 3, targetReps: 60 },
-          { name: 'GENTLE COBRA SPINE EXTENSION', calories: 40, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'Mat', details: '3 sets × 10 gentle breaths', defaultSets: 3, targetReps: 10 },
-          { name: 'SHOULDER MOBILITY BAND PASS-THROUGHS', calories: 50, duration: 8, muscleGroup: 'shoulders', tag: 'Mobility', equipment: 'Band', details: '3 sets × 12 controlled rotations', defaultSets: 3, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- EQUIPMENT / GYM PROGRAM 21 ---
-  {
-    id: '7day_equipment_strength_split',
-    name: '7-DAY HEAVY STRENGTH & HYPERTROPHY SPLIT',
-    area: 'Gym Split',
-    tag: 'Strength',
-    equipment: 'Barbell / Dumbbell',
-    targetGoal: 'strength',
-    recommendedBodyType: 'Intermediate / Heavy Lifter / Gym Access',
-    compatibilityNote: 'Pro gym split system engineered to maximize 1RM strength and muscle density.',
-    description: 'Pro gym split system. Select each daily split routine to log heavy barbell & dumbbell sets.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: CHEST & TRICEPS HYPERTROPHY',
-        muscleFocus: 'Pectorals & Triceps',
-        exercises: [
-          { name: 'BARBELL BENCH PRESS', calories: 220, duration: 15, muscleGroup: 'chest', tag: 'Strength', equipment: 'Barbell', details: '5 sets × 5 heavy reps (Tuck elbows, arched back)', defaultSets: 5, targetReps: 5 },
-          { name: 'INCLINE DUMBBELL PRESS', calories: 180, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps (Deep chest stretch)', defaultSets: 4, targetReps: 10 },
-          { name: 'CABLE CHEST FLY CROSSOVERS', calories: 130, duration: 10, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Cable', details: '3 sets × 15 reps (Peak contraction squeeze)', defaultSets: 3, targetReps: 15 },
-          { name: 'OVERHEAD TRICEP EXTENSION', calories: 120, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 2,
-        title: 'DAY 2: DEADLIFTS, LATS & BICEPS',
-        muscleFocus: 'Posterior Back & Biceps',
-        exercises: [
-          { name: 'BARBELL DEADLIFT', calories: 280, duration: 18, muscleGroup: 'back', tag: 'Strength', equipment: 'Barbell', details: '5 sets × 5 heavy reps (Neutral spine)', defaultSets: 5, targetReps: 5 },
-          { name: 'LAT PULLDOWN (WIDE GRIP)', calories: 150, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 10 reps (Pull to upper chest)', defaultSets: 4, targetReps: 10 },
-          { name: 'SEATED CABLE ROW WITH PAUSE', calories: 140, duration: 10, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 12 reps (1 second squeeze)', defaultSets: 4, targetReps: 12 },
-          { name: 'STANDING BARBELL BICEP CURLS', calories: 110, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 10 strict reps', defaultSets: 4, targetReps: 10 }
-        ]
-      },
-      {
-        dayNumber: 3,
-        title: 'DAY 3: HEAVY SQUATS & QUAD MASS',
-        muscleFocus: 'Quads, Glutes & Calves',
-        exercises: [
-          { name: 'BARBELL BACK SQUATS', calories: 290, duration: 18, muscleGroup: 'legs', tag: 'Strength', equipment: 'Barbell', details: '5 sets × 6 heavy reps below parallel', defaultSets: 5, targetReps: 6 },
-          { name: 'BULGARIAN DUMBBELL SPLIT SQUATS', calories: 180, duration: 12, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps per leg', defaultSets: 3, targetReps: 10 },
-          { name: 'QUAD LEG EXTENSION MACHINE', calories: 140, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Machine', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'STANDING BARBELL CALF RAISES', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 20 reps with 2s squeeze at top', defaultSets: 4, targetReps: 20 }
-        ]
-      },
-      {
-        dayNumber: 4,
-        title: 'DAY 4: MILITARY PRESS & DELTS',
-        muscleFocus: 'Anterior, Lateral & Rear Deltoids',
-        exercises: [
-          { name: 'BARBELL MILITARY OVERHEAD PRESS', calories: 180, duration: 12, muscleGroup: 'shoulders', tag: 'Strength', equipment: 'Barbell', details: '4 sets × 8 reps (Strict press)', defaultSets: 4, targetReps: 8 },
-          { name: 'STANDING DUMBBELL LATERAL RAISES', calories: 120, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 15 strict reps', defaultSets: 4, targetReps: 15 },
-          { name: 'FACE PULLS WITH ROPE CABLE', calories: 110, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 15 reps (Rear delt squeeze)', defaultSets: 4, targetReps: 15 },
-          { name: 'DUMBBELL SHRUGS FOR TRAPS', calories: 110, duration: 8, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 }
-        ]
-      },
-      {
-        dayNumber: 5,
-        title: 'DAY 5: ARMS ISOLATION & CABLE PUSHDOWNS',
-        muscleFocus: 'Biceps & Triceps Hypertrophy',
-        exercises: [
-          { name: 'TRICEP ROPE CABLE PUSHDOWNS', calories: 130, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 12 reps (Spread rope at bottom)', defaultSets: 4, targetReps: 12 },
-          { name: 'INCLINE DUMBBELL BICEP CURLS', calories: 120, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps (Deep stretch)', defaultSets: 4, targetReps: 10 },
-          { name: 'EZ-BAR SKULLCRUSHERS', calories: 140, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'DUMBBELL HAMMER CURLS', calories: 110, duration: 8, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 12 reps per arm', defaultSets: 3, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 6,
-        title: 'DAY 6: POWER CLEANS & HAMSTRING RDLs',
-        muscleFocus: 'Power & Posterior Chain',
-        exercises: [
-          { name: 'BARBELL POWER CLEANS', calories: 240, duration: 15, muscleGroup: 'legs', tag: 'Athletic', equipment: 'Barbell', details: '4 sets × 5 reps (Explosive triple extension)', defaultSets: 4, targetReps: 5 },
-          { name: 'BARBELL ROMANIAN DEADLIFTS (RDLs)', calories: 200, duration: 12, muscleGroup: 'back', tag: 'Strength', equipment: 'Barbell', details: '4 sets × 10 reps (Controlled eccentric lowering)', defaultSets: 4, targetReps: 10 },
-          { name: 'HAMSTRING LEG CURL MACHINE', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Machine', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'RENEGADE DUMBBELL PLANK ROWS', calories: 150, duration: 10, muscleGroup: 'core', tag: 'Strength', equipment: 'Dumbbell', details: '3 sets × 10 reps per side', defaultSets: 3, targetReps: 10 }
-        ]
-      },
-      {
-        dayNumber: 7,
-        title: 'DAY 7: CORE STABILITY & RECOVERY',
-        muscleFocus: 'Core Bracing & Mobility',
-        exercises: [
-          { name: 'CABLE WOODCHOPPERS', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Strength', equipment: 'Cable', details: '4 sets × 15 reps per side', defaultSets: 4, targetReps: 15 },
-          { name: 'HANGING KNEE LIFTS', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Calisthenics', equipment: 'None', details: '4 sets × 12 strict reps', defaultSets: 4, targetReps: 12 },
-          { name: 'HOLLOW PLANK HOLD', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Mobility', equipment: 'None', details: '3 sets × 60s core brace', defaultSets: 3, targetReps: 60 }
-        ]
-      }
-    ]
-  },
-
-  // --- EQUIPMENT / GYM PROGRAM 22 ---
-  {
-    id: '30min_dumbbell_fullbody',
-    name: '30-MIN DUMBBELL FULL-BODY ROUTINE',
-    area: 'Dumbbell Home Gym',
-    tag: 'Hypertrophy',
-    equipment: 'Dumbbells',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'All Body Types / Busy Schedule',
-    compatibilityNote: 'Compact, high-efficiency workout suitable for any weight or fitness level.',
-    description: 'Time-efficient full-body dumbbell routine targeting chest, back, legs, and shoulders in one compact session.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: FULL BODY DUMBBELL OVERLOAD',
-        muscleFocus: 'Chest, Back, Legs & Shoulders',
-        exercises: [
-          { name: 'DUMBBELL THRUSTERS (SQUAT TO PRESS)', calories: 230, duration: 12, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 12 reps deep squat into overhead press', defaultSets: 4, targetReps: 12 },
-          { name: 'RENEGADE DUMBBELL ROWS & PUSHUPS', calories: 210, duration: 10, muscleGroup: 'back', tag: 'Strength', equipment: 'Dumbbell', details: '4 sets × 10 reps per arm plank rows', defaultSets: 4, targetReps: 10 },
-          { name: 'DUMBBELL ROMANIAN DEADLIFTS', calories: 190, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 12 reps slow eccentric hamstring stretch', defaultSets: 4, targetReps: 12 },
-          { name: 'STANDING DUMBBELL BICEP TO ARNOLD PRESS', calories: 160, duration: 8, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 complex curl-and-press reps', defaultSets: 3, targetReps: 10 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 4: SHADOW MONARCH SOLO PROTOCOL ---
-  {
-    id: 'shadow_monarch_solo_protocol',
-    name: 'SHADOW MONARCH 100-REPS SOLO PROTOCOL',
-    area: 'System Ranking Protocol',
-    tag: 'Solo Leveling',
-    equipment: 'No Equipment',
-    targetGoal: 'strength',
-    recommendedBodyType: 'All Ranks / High Willpower',
-    compatibilityNote: 'Inspired by Jin-Woo daily QUEST. 100 pushups, 100 situps, 100 squats, 10km daily protocol.',
-    description: 'The legendary daily punishment-proof workout. Execute 100 reps of core movements to level up attributes instantly.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: THE MONARCH DAILY 100',
-        muscleFocus: 'Full Body Overload & Stamina',
-        exercises: [
-          { name: 'SHADOW PUSHUPS', calories: 180, duration: 15, muscleGroup: 'chest', tag: 'System', equipment: 'None', details: '5 sets × 20 strict floor pushups', defaultSets: 5, targetReps: 20 },
-          { name: 'SYSTEM ABDOMINAL SITUPS', calories: 140, duration: 12, muscleGroup: 'core', tag: 'System', equipment: 'None', details: '5 sets × 20 full range situps', defaultSets: 5, targetReps: 20 },
-          { name: 'MONARCH DEEP SQUATS', calories: 200, duration: 15, muscleGroup: 'legs', tag: 'System', equipment: 'None', details: '5 sets × 20 full-depth air squats', defaultSets: 5, targetReps: 20 },
-          { name: 'SHADOW RUN / CARDIO MARCH', calories: 350, duration: 30, muscleGroup: 'cardio', tag: 'Endurance', equipment: 'None', details: '30 mins steady pace run or outdoor march', defaultSets: 1, targetReps: 30 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 5: POWERLIFTING BIG 3 STRENGTH PEAK ---
-  {
-    id: 'powerlifting_big3_5x5',
-    name: 'POWERLIFTING BIG 3 STRENGTH PEAK',
-    area: 'Heavy Powerlifting',
-    tag: 'Strength',
-    equipment: 'Barbell & Squat Rack',
-    targetGoal: 'strength',
-    recommendedBodyType: 'Intermediate to Heavy Lifter',
-    compatibilityNote: 'Designed for maximizing 1-Rep-Max force output across Squat, Bench, and Deadlift.',
-    description: 'Pure 5x5 compound powerlifting strength program focusing on neurological adaptation and peak force production.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: SQUAT & BENCH OVERLOAD',
-        muscleFocus: 'Quads, Chest & Triceps',
-        exercises: [
-          { name: 'BARBELL LOW-BAR BACK SQUAT', calories: 300, duration: 20, muscleGroup: 'legs', tag: 'Powerlifting', equipment: 'Barbell', details: '5 sets × 5 heavy reps (85% 1RM)', defaultSets: 5, targetReps: 5 },
-          { name: 'PAUSED BARBELL BENCH PRESS', calories: 240, duration: 18, muscleGroup: 'chest', tag: 'Powerlifting', equipment: 'Barbell', details: '5 sets × 5 reps (1 second pause on chest)', defaultSets: 5, targetReps: 5 },
-          { name: 'CLOSE-GRIP BENCH PRESS', calories: 160, duration: 12, muscleGroup: 'arms', tag: 'Strength', equipment: 'Barbell', details: '4 sets × 8 reps', defaultSets: 4, targetReps: 8 }
-        ]
-      },
-      {
-        dayNumber: 2,
-        title: 'DAY 2: CONVENTIONAL DEADLIFT & LAT ROW',
-        muscleFocus: 'Posterior Chain & Lats',
-        exercises: [
-          { name: 'HEAVY CONVENTIONAL DEADLIFT', calories: 320, duration: 22, muscleGroup: 'back', tag: 'Powerlifting', equipment: 'Barbell', details: '5 sets × 5 reps (Reset every rep)', defaultSets: 5, targetReps: 5 },
-          { name: 'PENDLAY BARBELL ROWS', calories: 200, duration: 15, muscleGroup: 'back', tag: 'Strength', equipment: 'Barbell', details: '4 sets × 8 reps explosive off floor', defaultSets: 4, targetReps: 8 },
-          { name: 'FARMERS BARBELL CARRY', calories: 150, duration: 10, muscleGroup: 'core', tag: 'Grip', equipment: 'Barbell', details: '4 sets × 45s heavy carry', defaultSets: 4, targetReps: 45 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 6: PUSH PULL LEGS (PPL) PRO HYPERTROPHY ---
-  {
-    id: 'ppl_pro_hypertrophy_6day',
-    name: 'PUSH PULL LEGS (PPL) PRO HYPERTROPHY 6-DAY',
-    area: 'Aesthetic Bodybuilding',
-    tag: 'Hypertrophy',
-    equipment: 'Gym / Barbells & Dumbbells',
-    targetGoal: 'muscle_gain',
-    recommendedBodyType: 'All Body Types / Mass Building',
-    compatibilityNote: 'Gold standard 6-day split maximizing muscular hypertrophy with high volume.',
-    description: 'The classic 6-day Push-Pull-Legs split engineered for maximal sarcoplasmic hypertrophy and symmetrical physique.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: PUSH A (CHEST, SHOULDERS, TRICEPS)',
-        muscleFocus: 'Chest, Front Delt & Triceps',
-        exercises: [
-          { name: 'INCLINE BARBELL PRESS', calories: 220, duration: 15, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 8 reps', defaultSets: 4, targetReps: 8 },
-          { name: 'FLAT DUMBBELL CHEST PRESS', calories: 180, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'SEATED DUMBBELL OVERHEAD PRESS', calories: 150, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 },
-          { name: 'SIDE LATERAL RAISES', calories: 100, duration: 8, muscleGroup: 'shoulders', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 }
-        ]
-      },
-      {
-        dayNumber: 2,
-        title: 'DAY 2: PULL A (BACK, REAR DELT, BICEPS)',
-        muscleFocus: 'Lats, Upper Back & Biceps',
-        exercises: [
-          { name: 'WIDE-GRIP LAT PULLDOWNS', calories: 170, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'ONE-ARM DUMBBELL ROW', calories: 160, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps per side', defaultSets: 4, targetReps: 10 },
-          { name: 'FACEPULLS WITH CABLE ROPE', calories: 110, duration: 8, muscleGroup: 'shoulders', tag: 'Isolation', equipment: 'Cable', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'INCLINE DUMBBELL BICEP CURLS', calories: 120, duration: 8, muscleGroup: 'arms', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 }
-        ]
-      },
-      {
-        dayNumber: 3,
-        title: 'DAY 3: LEGS A (QUADS, HAMSTRINGS, CALVES)',
-        muscleFocus: 'Quads & Hamstrings',
-        exercises: [
-          { name: 'BARBELL BACK SQUAT', calories: 280, duration: 18, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 8 reps', defaultSets: 4, targetReps: 8 },
-          { name: 'ROMANIAN DEADLIFT (RDL)', calories: 210, duration: 12, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'LEG EXTENSION MACHINE', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Isolation', equipment: 'Machine', details: '3 sets × 15 reps', defaultSets: 3, targetReps: 15 },
-          { name: 'STANDING CALF RAISES', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Isolation', equipment: 'Machine', details: '4 sets × 20 reps', defaultSets: 4, targetReps: 20 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 7: MMA COMBAT STRIKER CONDITIONING ---
-  {
-    id: 'mma_combat_striker',
-    name: 'MMA COMBAT STRIKER CONDITIONING',
-    area: 'Martial Arts Athleticism',
-    tag: 'Athletic',
-    equipment: 'No Equipment or Dumbbell',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'Athletic / Fighter Build',
-    compatibilityNote: 'High-speed combat rounds designed to elevate VO2 max and explosive punch torque.',
-    description: '3-minute fight rounds simulating MMA octagon demands. Combines shadow boxing, sprawl burpees, and rotational core drive.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'ROUND 1: COMBAT STRIKE & SPRAWL',
-        muscleFocus: 'Cardio, Shoulders & Explosive Legs',
-        exercises: [
-          { name: 'SHADOW BOXING COMBOS (1-2-3-HOOK)', calories: 160, duration: 10, muscleGroup: 'cardio', tag: 'Combat', equipment: 'None', details: '3 rounds × 3 mins rapid punching', defaultSets: 3, targetReps: 180 },
-          { name: 'MMA SPRAWL BURPEES', calories: 200, duration: 10, muscleGroup: 'cardio', tag: 'Combat', equipment: 'None', details: '4 sets × 12 fast sprawls', defaultSets: 4, targetReps: 12 },
-          { name: 'ROTATIONAL MEDICINE BALL / CORE TWISTS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'Combat', equipment: 'None', details: '4 sets × 20 twisting reps', defaultSets: 4, targetReps: 20 },
-          { name: 'EXPLOSIVE EXPLOSIVE TUCK JUMPS', calories: 150, duration: 8, muscleGroup: 'legs', tag: 'Plyo', equipment: 'None', details: '3 sets × 12 high jumps', defaultSets: 3, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 8: TACTICAL KETTLEBELL HYBRID ENGINE ---
-  {
-    id: 'tactical_kettlebell_hybrid',
-    name: 'TACTICAL KETTLEBELL HYBRID ENGINE',
-    area: 'Functional Conditioning',
-    tag: 'Tactical',
-    equipment: 'Kettlebell / Dumbbell',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'All Body Types',
-    compatibilityNote: 'Develops unbreakable grip, posterior power, and metabolic resilience.',
-    description: 'Special forces style kettlebell conditioning. Heavy swings, goblet squats, and Turkish get-ups.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: KETTLEBELL POSTERIOR OVERDRIVE',
-        muscleFocus: 'Posterior Chain, Core & Grip',
-        exercises: [
-          { name: 'RUSSIAN KETTLEBELL SWINGS', calories: 220, duration: 12, muscleGroup: 'back', tag: 'Tactical', equipment: 'Kettlebell', details: '5 sets × 20 reps (Explosive hip drive)', defaultSets: 5, targetReps: 20 },
-          { name: 'HEAVY GOBLET SQUATS', calories: 180, duration: 10, muscleGroup: 'legs', tag: 'Tactical', equipment: 'Kettlebell', details: '4 sets × 12 reps deep depth', defaultSets: 4, targetReps: 12 },
-          { name: 'TURKISH GET-UPS', calories: 140, duration: 10, muscleGroup: 'core', tag: 'Tactical', equipment: 'Kettlebell', details: '3 sets × 5 reps per arm slow control', defaultSets: 3, targetReps: 5 },
-          { name: 'SINGLE-ARM KETTLEBELL CLEAN & PRESS', calories: 160, duration: 10, muscleGroup: 'shoulders', tag: 'Tactical', equipment: 'Kettlebell', details: '4 sets × 8 reps per arm', defaultSets: 4, targetReps: 8 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 9: SPINE DECOMPRESSION & JOINT MOBILITY REHAB ---
-  {
-    id: 'spine_decompression_joint_rehab',
-    name: 'SPINE DECOMPRESSION & JOINT MOBILITY REHAB',
-    area: 'Rehab & Joint Health',
-    tag: 'Rehab',
-    equipment: 'No Equipment / Mat',
-    targetGoal: 'joint_care',
-    recommendedBodyType: 'Heavy Body / Desk Workers / Joint Care',
-    compatibilityNote: 'Low impact, zero axial loading. Restores spinal disc height and relieves back/knee friction.',
-    description: 'Therapeutic joint mobility protocol designed to decompress lower lumbar vertebrae and open tight hips.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: LUMBAR DECOMPRESSION & HIP OPENER',
-        muscleFocus: 'Spine, Lower Back & Hips',
-        exercises: [
-          { name: 'CAT-COW SPINAL SEGMENTATION', calories: 60, duration: 8, muscleGroup: 'back', tag: 'Mobility', equipment: 'None', details: '3 sets × 12 slow breath-coordinated reps', defaultSets: 3, targetReps: 12 },
-          { name: 'BIRD-DOG CORE STABILIZATION', calories: 70, duration: 8, muscleGroup: 'core', tag: 'Rehab', equipment: 'None', details: '3 sets × 10 reps per side (2s pause)', defaultSets: 3, targetReps: 10 },
-          { name: '90/90 HIP MOBILITY FLOW', calories: 80, duration: 10, muscleGroup: 'legs', tag: 'Mobility', equipment: 'None', details: '3 sets × 8 gentle transitions', defaultSets: 3, targetReps: 8 },
-          { name: 'DEAD HANG SPINE DECOMPRESSION', calories: 50, duration: 6, muscleGroup: 'back', tag: 'Rehab', equipment: 'Pull-up Bar', details: '4 sets × 45s passive bar hang', defaultSets: 4, targetReps: 45 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 10: HIIT TABATA 20-MIN FAT FURNACE ---
-  {
-    id: 'hiit_tabata_fat_furnace',
-    name: 'HIIT TABATA 20-MIN FAT FURNACE',
-    area: 'High Intensity Fat Shred',
-    tag: 'Cardio',
-    equipment: 'No Equipment',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'Metabolic Shred / Weight Loss',
-    compatibilityNote: '20 seconds max effort / 10 seconds rest protocol proven to trigger post-exercise oxygen consumption (EPOC).',
-    description: 'Ultra intense 20-minute Tabata intervals burning maximum calories in minimal time.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: TABATA BURPEE & SPRINT MATRIX',
-        muscleFocus: 'Full Body Cardiovascular System',
-        exercises: [
-          { name: 'TABATA BURPEES (20S ON / 10S OFF)', calories: 150, duration: 8, muscleGroup: 'cardio', tag: 'HIIT', equipment: 'None', details: '8 intervals × 20s max effort', defaultSets: 8, targetReps: 20 },
-          { name: 'TABATA SPEED MOUNTAIN CLIMBERS', calories: 120, duration: 8, muscleGroup: 'core', tag: 'HIIT', equipment: 'None', details: '8 intervals × 20s fast feet', defaultSets: 8, targetReps: 20 },
-          { name: 'TABATA JUMP SQUATS', calories: 140, duration: 8, muscleGroup: 'legs', tag: 'HIIT', equipment: 'None', details: '8 intervals × 20s plyo jumps', defaultSets: 8, targetReps: 20 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 11: SHADOW NINJA AGILITY & PLYOMETRICS ---
-  {
-    id: 'ninja_agility_plyometrics',
-    name: 'SHADOW NINJA AGILITY & PLYOMETRIC EXPLOSION',
-    area: 'Speed & Agility',
-    tag: 'Athletic',
-    equipment: 'No Equipment',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'Athletic / Lean Build',
-    compatibilityNote: 'Enhances nervous system fast-twitch fibers, lateral agility, and vertical jump power.',
-    description: 'Dynamic agility and vertical power routine combining lateral bounds, skater hops, and depth jumps.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: LATERAL SPEED & VERTICAL POWER',
-        muscleFocus: 'Fast-Twitch Leg Fibers & Agility',
-        exercises: [
-          { name: 'SKATER BOUND HOPS', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Agility', equipment: 'None', details: '4 sets × 16 explosive side hops', defaultSets: 4, targetReps: 16 },
-          { name: 'BROAD JUMP TO BACKPEDAL', calories: 150, duration: 10, muscleGroup: 'legs', tag: 'Plyo', equipment: 'None', details: '4 sets × 8 max distance leaps', defaultSets: 4, targetReps: 8 },
-          { name: 'SINGLE-LEG HOP STABILITY', calories: 100, duration: 8, muscleGroup: 'legs', tag: 'Balance', equipment: 'None', details: '3 sets × 10 hops per leg', defaultSets: 3, targetReps: 10 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 12: POSTERIOR CHAIN & GLUTE POWER SHRED ---
-  {
-    id: 'posterior_chain_glute_power',
-    name: 'POSTERIOR CHAIN & GLUTE POWER SHRED',
-    area: 'Lower Body Aesthetics',
-    tag: 'Hypertrophy',
-    equipment: 'Barbell or Dumbbells',
-    targetGoal: 'muscle_gain',
-    recommendedBodyType: 'All Body Types',
-    compatibilityNote: 'Strengthens hamstrings, glutes, and lower back to correct anterior pelvic tilt.',
-    description: 'High-density glute and hamstring focused training plan utilizing hip thrusts and Romanian deadlifts.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: HEAVY HIP THRUSTS & RDLs',
-        muscleFocus: 'Gluteus Maximus & Hamstrings',
-        exercises: [
-          { name: 'BARBELL / DUMBBELL HIP THRUSTS', calories: 210, duration: 15, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 12 reps (2 second squeeze at peak)', defaultSets: 4, targetReps: 12 },
-          { name: 'SINGLE-LEG DUMBBELL RDL', calories: 160, duration: 10, muscleGroup: 'legs', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps per side', defaultSets: 3, targetReps: 10 },
-          { name: 'FROG PUMPS FOR GLUTE BURN', calories: 120, duration: 8, muscleGroup: 'legs', tag: 'Burnout', equipment: 'None', details: '3 sets × 30 rapid reps', defaultSets: 3, targetReps: 30 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 13: GYMNASTIC RINGS UPPER BODY DOMINANCE ---
-  {
-    id: 'gymnastic_rings_dominance',
-    name: 'GYMNASTIC RINGS UPPER BODY DOMINANCE',
-    area: 'Advanced Calisthenics',
-    tag: 'Rings',
-    equipment: 'Gymnastic Rings',
-    targetGoal: 'calisthenics',
-    recommendedBodyType: 'Athletic / Relative Strength',
-    compatibilityNote: 'Instability of suspension rings recruits stabilizing micro-muscles across shoulders & chest.',
-    description: 'Master upper body suspension training with ring dips, ring pushups, and skin-the-cat progressions.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: RING PUSH & DIP STABILITY',
-        muscleFocus: 'Chest, Stabilizers & Triceps',
-        exercises: [
-          { name: 'SUSPENSION RING DIPS', calories: 170, duration: 12, muscleGroup: 'chest', tag: 'Rings', equipment: 'Rings', details: '4 sets × 8 reps (Turn rings out at top)', defaultSets: 4, targetReps: 8 },
-          { name: 'RING FLYES / BULGARIAN PUSHUPS', calories: 150, duration: 10, muscleGroup: 'chest', tag: 'Rings', equipment: 'Rings', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 },
-          { name: 'RING INVERTED ROWS', calories: 140, duration: 10, muscleGroup: 'back', tag: 'Rings', equipment: 'Rings', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 14: 6-PACK ABS & OBLIQUE CORE SHREDDER ---
-  {
-    id: 'core_sixpack_crusher',
-    name: '6-PACK ABS & OBLIQUE CORE SHREDDER',
-    area: 'Abdominal Sculpting',
-    tag: 'Core',
-    equipment: 'No Equipment',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'All Body Types',
-    compatibilityNote: 'Targets rectus abdominis, transverse abdominis, and obliques for a chiseled midsection.',
-    description: '15-minute intense non-stop core circuit targeting upper abs, lower abs, and obliques.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: ABDOMINAL COMPRESSION MATRIX',
-        muscleFocus: 'Rectus Abdominis & Obliques',
-        exercises: [
-          { name: 'HANGING LEG LIFTS / REVERSE CRUNCHES', calories: 110, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'RUSSIAN TWISTS WITH WEIGHT', calories: 100, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '4 sets × 20 twists', defaultSets: 4, targetReps: 20 },
-          { name: 'BICYCLE CRUNCHES (CONTROLLED)', calories: 90, duration: 8, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 20 reps', defaultSets: 3, targetReps: 20 },
-          { name: 'HOLLOW BODY isometric HOLD', calories: 80, duration: 6, muscleGroup: 'core', tag: 'Core', equipment: 'None', details: '3 sets × 45 seconds', defaultSets: 3, targetReps: 45 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 15: IRON BODY ISOMETRIC TENSION PROTOCOL ---
-  {
-    id: 'isometric_iron_body',
-    name: 'IRON BODY ISOMETRIC TENSION PROTOCOL',
-    area: 'Tendon Strength & Isometrics',
-    tag: 'Tendon Strength',
-    equipment: 'No Equipment',
-    targetGoal: 'joint_care',
-    recommendedBodyType: 'All Fitness Levels / Joint Recovery',
-    compatibilityNote: 'Isometric muscle contraction increases tendon stiffness without destructive eccentric damage.',
-    description: 'Static hold holds designed to build iron tendon density, mental grit, and joint durability.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: FULL BODY ISOMETRIC HOLD',
-        muscleFocus: 'Tendon Stiffness & Core',
-        exercises: [
-          { name: 'PARALLEL SQUAT WALL SIT HOLD', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Isometric', equipment: 'None', details: '4 sets × 60s hold', defaultSets: 4, targetReps: 60 },
-          { name: 'PUSHUP BOTTOM POSITION ISOMETRIC HOLD', calories: 100, duration: 8, muscleGroup: 'chest', tag: 'Isometric', equipment: 'None', details: '3 sets × 30s hold 2 inches off floor', defaultSets: 3, targetReps: 30 },
-          { name: 'SUPERMAN LAT TENSION HOLD', calories: 80, duration: 6, muscleGroup: 'back', tag: 'Isometric', equipment: 'None', details: '3 sets × 45s prone hold', defaultSets: 3, targetReps: 45 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 16: DUMBBELL ONLY UPPER/LOWER 4-DAY SPLIT ---
-  {
-    id: 'dumbbell_upper_lower_split',
-    name: 'DUMBBELL ONLY UPPER/LOWER 4-DAY SPLIT',
-    area: 'Home Gym Hypertrophy',
-    tag: 'Dumbbell',
-    equipment: 'Dumbbells',
-    targetGoal: 'muscle_gain',
-    recommendedBodyType: 'All Body Types / Home Gym Users',
-    compatibilityNote: 'Hypertrophy system engineered requiring only a pair of adjustable dumbbells.',
-    description: 'Complete 4-day upper/lower muscle mass builder requiring only a set of dumbbells.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: UPPER BODY DUMBBELL POWER',
-        muscleFocus: 'Chest, Back, Shoulders & Arms',
-        exercises: [
-          { name: 'DUMBBELL FLOOR / BENCH PRESS', calories: 200, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'SEATED DUMBBELL ROWS', calories: 180, duration: 12, muscleGroup: 'back', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'DUMBBELL SHOULDER PRESS', calories: 150, duration: 10, muscleGroup: 'shoulders', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '3 sets × 10 reps', defaultSets: 3, targetReps: 10 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 17: HYBRID ATHLETE: RUNNING & BARBELL METCON ---
-  {
-    id: 'hybrid_runner_barbell_metcon',
-    name: 'HYBRID ATHLETE: RUNNING & BARBELL METCON',
-    area: 'Hybrid Fitness',
-    tag: 'Hybrid',
-    equipment: 'Barbell & Running Shoes',
-    targetGoal: 'fat_loss',
-    recommendedBodyType: 'Endurance & Strength Hybrid',
-    compatibilityNote: 'Combines 5K pace endurance with barbell thrusters for maximum cardiovascular output.',
-    description: 'Engineered for hybrid athletes who want to run fast 5Ks while maintaining heavy strength.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: BARBELL METCON & 3KM TEMPO',
-        muscleFocus: 'Cardio, Quads & Upper Press',
-        exercises: [
-          { name: 'BARBELL THRUSTERS LIGHT/MED', calories: 240, duration: 12, muscleGroup: 'legs', tag: 'Metcon', equipment: 'Barbell', details: '4 sets × 15 reps continuous', defaultSets: 4, targetReps: 15 },
-          { name: '3KM OUTDOOR TEMPO RUN', calories: 300, duration: 18, muscleGroup: 'cardio', tag: 'Running', equipment: 'Shoes', details: 'Target pace under 5:30/km', defaultSets: 1, targetReps: 18 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 18: GRAPPLER ANATOMY: FOREARMS & GRIP STRENGTH ---
-  {
-    id: 'grappler_grip_armageddon',
-    name: 'GRAPPLER ANATOMY: FOREARMS & GRIP STRENGTH',
-    area: 'Combat Grip Strength',
-    tag: 'Grip',
-    equipment: 'Dumbbells / Towel',
-    targetGoal: 'strength',
-    recommendedBodyType: 'Martial Artists / Grapplers',
-    compatibilityNote: 'Unbreakable grip strength, crushing wrist curls, and thick forearm hypertrophy.',
-    description: 'Dedicated grip & forearm conditioning system for Jiu-Jitsu, wrestling, and heavy deadlifters.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: FOREARM FLEXORS & CRUSHING GRIP',
-        muscleFocus: 'Wrist Flexors, Brachioradialis & Grip',
-        exercises: [
-          { name: 'TOWEL PULL-UP HANGS', calories: 120, duration: 8, muscleGroup: 'back', tag: 'Grip', equipment: 'Towel', details: '4 sets × 45s towel hold', defaultSets: 4, targetReps: 45 },
-          { name: 'DUMBBELL WRIST CURLS OVER BENCH', calories: 100, duration: 8, muscleGroup: 'arms', tag: 'Isolation', equipment: 'Dumbbell', details: '4 sets × 15 reps', defaultSets: 4, targetReps: 15 },
-          { name: 'REVERSE BARBELL BICEP CURLS', calories: 110, duration: 8, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Barbell', details: '4 sets × 12 reps (Brachioradialis focus)', defaultSets: 4, targetReps: 12 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 19: DESKBOUND POSTURE & SCIATICA RELIEF ---
-  {
-    id: 'deskbound_posture_sciatica',
-    name: 'DESKBOUND POSTURE & SCIATICA RELIEF',
-    area: 'Ergonomic Health',
-    tag: 'Posture',
-    equipment: 'No Equipment',
-    targetGoal: 'joint_care',
-    recommendedBodyType: 'Desk Workers / Sciatica Prevention',
-    compatibilityNote: 'Fixes rounded shoulders (upper cross syndrome) and tight hip flexors from sitting.',
-    description: '10-minute daily posture corrector releasing nerve compression and restoring erect spine alignment.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: THORACIC EXTENSION & PIRIFORMIS STRETCH',
-        muscleFocus: 'Upper Back, Gluteus & Neck',
-        exercises: [
-          { name: 'WALL SLIDES FOR UPPER BACK', calories: 50, duration: 6, muscleGroup: 'back', tag: 'Posture', equipment: 'None', details: '3 sets × 12 strict reps against wall', defaultSets: 3, targetReps: 12 },
-          { name: 'PIRIFORMIS SEATED FIGURE-4 STRETCH', calories: 40, duration: 6, muscleGroup: 'legs', tag: 'Sciatica', equipment: 'None', details: '3 sets × 45s hold per side', defaultSets: 3, targetReps: 45 },
-          { name: 'CHIN TUCKS FOR NECK ALIGNMENT', calories: 30, duration: 4, muscleGroup: 'shoulders', tag: 'Posture', equipment: 'None', details: '3 sets × 15 gentle holds', defaultSets: 3, targetReps: 15 }
-        ]
-      }
-    ]
-  },
-
-  // --- PROGRAM 20: 3D PECTORAL PUMP & TRICEP DESTROYER ---
-  {
-    id: 'pectoral_pump_tricep_destroyer',
-    name: '3D PECTORAL PUMP & TRICEP DESTROYER',
-    area: 'Chest & Arm Hypertrophy',
-    tag: 'Chest & Arms',
-    equipment: 'Dumbbells & Cables or Bench',
-    targetGoal: 'muscle_gain',
-    recommendedBodyType: 'All Body Types',
-    compatibilityNote: 'Specialized upper chest incline focus paired with tricep long head isolation.',
-    description: 'Focused chest and arm session designed for maximum blood flow and upper chest shelf volume.',
-    days: [
-      {
-        dayNumber: 1,
-        title: 'DAY 1: INCLINE CHEST & TRICEP LONG HEAD',
-        muscleFocus: 'Upper Pectorals & Triceps',
-        exercises: [
-          { name: 'INCLINE DUMBBELL CHEST PRESS', calories: 200, duration: 12, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 10 reps', defaultSets: 4, targetReps: 10 },
-          { name: 'LOW TO HIGH CABLE FLYES', calories: 140, duration: 10, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Cable', details: '4 sets × 12 reps (Upper chest squeeze)', defaultSets: 4, targetReps: 12 },
-          { name: 'OVERHEAD DUMBBELL TRICEP EXTENSION', calories: 130, duration: 10, muscleGroup: 'arms', tag: 'Hypertrophy', equipment: 'Dumbbell', details: '4 sets × 12 reps', defaultSets: 4, targetReps: 12 },
-          { name: 'DIPS ON PARALLEL BARS', calories: 160, duration: 10, muscleGroup: 'chest', tag: 'Hypertrophy', equipment: 'Bars', details: '3 sets × 12 reps lean forward', defaultSets: 3, targetReps: 12 }
+          enrichExercise({ name: 'GLUTE BRIDGES WITH 2S HOLD', calories: 130, duration: 10, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'None', details: '4 sets × 15 reps with 2s squeeze', defaultSets: 4, targetReps: 15, category: 'Primary Compound' }),
+          enrichExercise({ name: 'CHAIR ASSISTED SQUATS', calories: 100, duration: 10, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 12 sit-to-stand reps', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'BIRD DOG BALANCE EXTENSIONS', calories: 80, duration: 8, muscleGroup: 'core', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 12 per side', defaultSets: 3, targetReps: 12, category: 'Accessory' }),
+          enrichExercise({ name: 'ISOMETRIC WALL SITS', calories: 90, duration: 8, muscleGroup: 'legs', tag: 'Joint Safe', equipment: 'None', details: '3 sets × 45s static hold', defaultSets: 3, targetReps: 45, category: 'Finisher' }),
+          enrichExercise({ name: 'SEATED HAMSTRING STRETCH', calories: 30, duration: 5, muscleGroup: 'legs', tag: 'Mobility', equipment: 'Mat', details: '2 sets × 60s per leg', defaultSets: 2, targetReps: 60, category: 'Mobility' })
         ]
       }
     ]
