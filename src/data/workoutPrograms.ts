@@ -487,48 +487,635 @@ export function enrichExercise(ex: ExerciseItem): ExerciseItem {
   };
 }
 
-// Progressive Overload Scaling Engine: Scales reps and sets progressively over weeks 1-8 based on experience level
+// Master map of exercise name upper case -> { beginner, intermediate, advanced } difficulty variants
+export const EXERCISE_DIFFICULTY_VARIANTS: Record<string, {
+  beginner: { earlyWeeks: { name: string; executionSteps: string[]; formTips?: string[]; restTime?: string }; lateWeeks: { name: string; executionSteps: string[]; formTips?: string[]; restTime?: string } };
+  intermediate: { earlyWeeks: { name: string; executionSteps: string[]; formTips?: string[]; restTime?: string }; lateWeeks: { name: string; executionSteps: string[]; formTips?: string[]; restTime?: string } };
+  advanced: { earlyWeeks: { name: string; executionSteps: string[]; formTips?: string[]; restTime?: string }; lateWeeks: { name: string; executionSteps: string[]; formTips?: string[]; restTime?: string } };
+}> = {
+  'STANDARD FLOOR PUSHUPS': {
+    beginner: {
+      earlyWeeks: {
+        name: 'WALL / KNEE INCLINE PUSHUPS (BEGINNER ADAPTED)',
+        executionSteps: [
+          '1. Setup: Place hands against a wall or sturdy elevated bed/chair, or place knees on floor with mat padding.',
+          '2. Core Brace: Maintain a straight line from shoulders to hips/knees with glutes tight.',
+          '3. Incline Descent: Inhale and lower chest gently toward surface with elbows at 45°.',
+          '4. Smooth Press: Exhale and press back to arm lockout.'
+        ],
+        formTips: ['Keep glutes engaged to prevent lower back arching.', 'Do not allow hips to sag.'],
+        restTime: '75-90 seconds'
+      },
+      lateWeeks: {
+        name: 'LOW INCLINE / KNEE PUSHUPS (BEGINNER PROGRESSION)',
+        executionSteps: [
+          '1. Setup: Knees on floor or hands on a low bench/chair, palms shoulder-width.',
+          '2. Descent: Lower chest to 1 inch off surface with 2-second controlled lowering.',
+          '3. Press: Drive through palms to full elbow lockout.'
+        ],
+        formTips: ['Keep spine neutral throughout.'],
+        restTime: '60-75 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'STANDARD FLOOR PUSHUPS',
+        executionSteps: [
+          '1. Setup: Place hands on floor slightly wider than shoulder-width, palms flat.',
+          '2. Core Lock: Engage glutes and brace abdominal wall in a rigid plank.',
+          '3. Controlled Descent: Inhale and lower chest to 1-2 inches off floor with elbows at 45°.',
+          '4. Explosive Press: Exhale and press through palms back to arm lockout.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'TEMPO PAUSE FLOOR PUSHUPS',
+        executionSteps: [
+          '1. Setup: High plank stance on floor.',
+          '2. Controlled Lower: Lower chest over 3 seconds to 1 inch off floor.',
+          '3. Pause: Hold bottom chest position for 1 full second.',
+          '4. Press: Exhale and drive explosively to lockout.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'DECLINE CHAIR PUSHUPS (ADVANCED LOAD)',
+        executionSteps: [
+          '1. Setup: Place feet elevated on a sturdy chair or bench, hands flat on floor.',
+          '2. Descent: Inhale and lower chest to floor with core locked in rigid plank.',
+          '3. Press: Drive through palms to press upper body up diagonally.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'EXPLOSIVE PLYOMETRIC CLAPPING PUSHUPS',
+        executionSteps: [
+          '1. Setup: Standard pushup plank stance.',
+          '2. Explosive Drive: Lower chest rapidly and press with maximal force to launch hands off floor.',
+          '3. Clap & Catch: Perform a rapid hand clap in mid-air and land softly back into pushup position.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    }
+  },
+
+  'DIAMOND TRICEP PUSHUPS': {
+    beginner: {
+      earlyWeeks: {
+        name: 'INCLINE BENCH TRICEP PUSHUPS (BEGINNER)',
+        executionSteps: [
+          '1. Setup: Place hands close together on an elevated bench or wall.',
+          '2. Lowering: Lower chest toward hands keeping elbows tucked right against ribs.',
+          '3. Press: Push through palms focusing on tricep contraction.'
+        ],
+        restTime: '75-90 seconds'
+      },
+      lateWeeks: {
+        name: 'KNEELING DIAMOND PUSHUPS (BEGINNER PROGRESSION)',
+        executionSteps: [
+          '1. Setup: Knees on floor, hands forming diamond shape under chest.',
+          '2. Lowering: Lower chest toward diamond hands with elbows tucked close.',
+          '3. Press: Drive back up to lockout.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'DIAMOND TRICEP PUSHUPS',
+        executionSteps: [
+          '1. Setup: Place hands together under chest forming a diamond shape with thumbs and index fingers.',
+          '2. Descent: Lower chest towards hands while keeping elbows tucked close to ribcage.',
+          '3. Press: Drive through palms, extending elbows to contract triceps at top.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'TEMPO DIAMOND PUSHUPS (PAUSE AT BOTTOM)',
+        executionSteps: [
+          '1. Setup: Diamond stance on toes.',
+          '2. Descent: 3-second slow lowering to diamond hands with 1-second pause at bottom.',
+          '3. Press: Explosive lockout focusing on tricep squeeze.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'DECLINE DIAMOND TRICEP PUSHUPS',
+        executionSteps: [
+          '1. Setup: Elevate feet on a chair, hands in diamond shape under chest.',
+          '2. Lowering & Press: Lower chest to hands with full control, press up explosively.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'ARCHER TRICEP PUSHUPS',
+        executionSteps: [
+          '1. Setup: Wide stance with weight shifted primarily onto one tricep/arm.',
+          '2. Press: Press body up through working arm.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    }
+  },
+
+  'PIKE PUSHUPS (SHOULDER PRESS)': {
+    beginner: {
+      earlyWeeks: {
+        name: 'INCLINE HIGH PLANK SHOULDER TAPS (BEGINNER)',
+        executionSteps: [
+          '1. Setup: Hands elevated on chair or bed in high plank stance.',
+          '2. Shoulder Tap: Alternately lift right hand to tap left shoulder, then left hand to right shoulder while bracing core.'
+        ],
+        restTime: '75 seconds'
+      },
+      lateWeeks: {
+        name: 'MODIFIED SHORT PIKE HOLD & PRESS (BEGINNER)',
+        executionSteps: [
+          '1. Setup: Feet wide, hips lifted slightly in high pike stance.',
+          '2. Micro Press: Lower forehead 2-3 inches diagonally forward and press back up.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'PIKE PUSHUPS (SHOULDER PRESS)',
+        executionSteps: [
+          '1. Setup: Inverted V-shape with hips high.',
+          '2. Tripod Descent: Lower forehead diagonally forward toward floor.',
+          '3. Press: Push diagonally back to inverted V.'
+        ],
+        restTime: '60-70 seconds'
+      },
+      lateWeeks: {
+        name: 'PAUSE PIKE PUSHUPS',
+        executionSteps: [
+          '1. Setup: High inverted V stance.',
+          '2. Pause: Lower forehead 1 inch off floor and hold for 1.5 seconds before driving overhead.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'FEET-ELEVATED PIKE PUSHUPS',
+        executionSteps: [
+          '1. Setup: Elevate feet on chair, hips stacked over shoulders.',
+          '2. Press: Lower forehead diagonally and press up vertically.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'WALL HANDSTAND HOLD / WALK-UPS',
+        executionSteps: [
+          '1. Setup: Walk feet up wall into partial or full handstand hold against wall.',
+          '2. Hold/Press: Maintain rigid shoulder lockout for full set duration.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    }
+  },
+
+  'EXPLOSIVE AIR SQUATS': {
+    beginner: {
+      earlyWeeks: {
+        name: 'CHAIR SIT-TO-STAND SQUATS (BEGINNER ADAPTED)',
+        executionSteps: [
+          '1. Setup: Stand 2 inches in front of a sturdy chair with feet shoulder-width.',
+          '2. Sit Back: Inhale, hinge hips back and gently lower glutes onto chair seat.',
+          '3. Stand Up: Exhale, drive through mid-foot to stand back up tall without using hands.'
+        ],
+        formTips: ['Keep chest lifted and knees tracking over toes.', 'Do not plop onto chair; control descent.'],
+        restTime: '75-90 seconds'
+      },
+      lateWeeks: {
+        name: 'CONTROLLED BODYWEIGHT SQUATS (BEGINNER PROGRESSION)',
+        executionSteps: [
+          '1. Setup: Stand with feet shoulder-width apart.',
+          '2. Squat: Lower hips until thighs are parallel to floor.',
+          '3. Drive: Press through heels to stand tall.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'STANDARD BODYWEIGHT AIR SQUATS',
+        executionSteps: [
+          '1. Setup: Stand with feet shoulder-width apart, toes turned slightly out.',
+          '2. Hinge & Sit: Push hips back and lower until thigh crease passes knee line.',
+          '3. Stand: Drive through heels to stand up, squeezing glutes at top.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'TEMPO PAUSE AIR SQUATS (2S BOTTOM HOLD)',
+        executionSteps: [
+          '1. Setup: Shoulder-width stance.',
+          '2. Lower & Hold: Lower into deep squat, hold bottom depth for 2 full seconds.',
+          '3. Stand: Drive up explosively.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'EXPLOSIVE AIR SQUATS',
+        executionSteps: [
+          '1. Setup: Stand shoulder-width apart.',
+          '2. Squat & Launch: Lower to parallel and drive up with maximal speed.',
+          '3. Squeeze: Lock out glutes at peak.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'PLYOMETRIC JUMP SQUATS / BULGARIAN SPLIT SQUATS',
+        executionSteps: [
+          '1. Setup: Dip into squat stance and explode upward launching 3-6 inches off floor.',
+          '2. Landing: Land smoothly on balls of feet absorbing impact into next rep.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    }
+  },
+
+  'PLYOMETRIC JUMP LUNGES': {
+    beginner: {
+      earlyWeeks: {
+        name: 'SUPPORTED REVERSE LUNGES (BEGINNER)',
+        executionSteps: [
+          '1. Setup: Stand beside a wall or sturdy chair, placing one hand gently on it for balance.',
+          '2. Step Back: Take a generous step backward with right leg, lowering back knee toward floor.',
+          '3. Drive Up: Press through front heel to step forward to standing stance.'
+        ],
+        restTime: '75 seconds'
+      },
+      lateWeeks: {
+        name: 'ALTERNATING STATIONARY LUNGES (BEGINNER PROGRESSION)',
+        executionSteps: [
+          '1. Setup: Stand tall with hands on hips.',
+          '2. Lunge: Step forward alternating legs, bending both knees to 90°.',
+          '3. Return: Push back to starting position.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'ALTERNATING STEPPING LUNGES',
+        executionSteps: [
+          '1. Setup: Stand tall with feet hip-width.',
+          '2. Step Forward: Step forward into a deep lunge with back knee 1 inch off floor.',
+          '3. Drive: Push off front foot back to start.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'EXPANDED SPEED STEPPING LUNGES',
+        executionSteps: [
+          '1. Continuous fluid stepping lunges maintaining steady cadence.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'PLYOMETRIC JUMP LUNGES',
+        executionSteps: [
+          '1. Setup: Lunge position.',
+          '2. Jump: Explode vertically and switch leg positions in air landing softly into lunge.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'EXPLOSIVE HEIGHT JUMP LUNGES',
+        executionSteps: [
+          '1. Max vertical height jump lunges switching legs rapidly in mid-air.'
+        ],
+        restTime: '45 seconds'
+      }
+    }
+  },
+
+  'FULL BODY BURPEE SPRINTS': {
+    beginner: {
+      earlyWeeks: {
+        name: 'STEP-OUT PLANK STEPPERS (NO-JUMP BURPEE)',
+        executionSteps: [
+          '1. Setup: Stand tall with feet shoulder-width.',
+          '2. Hands Down: Bend knees and place hands on floor.',
+          '3. Step Back: Step right leg back then left leg back into high plank.',
+          '4. Step In & Stand: Step feet back up one at a time and stand tall reaching hands overhead.'
+        ],
+        formTips: ['No jumping or pushup required; focus on fluid hip mobility and balance.'],
+        restTime: '75-90 seconds'
+      },
+      lateWeeks: {
+        name: 'LOW IMPACT STEP-OUT BURPEES',
+        executionSteps: [
+          '1. Place hands on floor, hop or step feet back into plank, step back in and jump 1 inch overhead.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'STANDARD BURPEES (WITH JUMP)',
+        executionSteps: [
+          '1. Hands to floor, kick feet back to plank, jump feet back to hands, launch overhead with clap.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'CHEST-TO-FLOOR BURPEES',
+        executionSteps: [
+          '1. Lower chest completely to floor at bottom of plank before jumping overhead.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'CHEST-TO-FLOOR BURPEE SPRINTS',
+        executionSteps: [
+          '1. Rapid chest-to-floor burpee with maximal height overhead jump.'
+        ],
+        restTime: '45 seconds'
+      },
+      lateWeeks: {
+        name: 'BURPEE TUCK JUMP SPRINTS',
+        executionSteps: [
+          '1. Perform chest-to-floor burpee and explode into a high knee tuck-jump at top.'
+        ],
+        restTime: '30-45 seconds'
+      }
+    }
+  },
+
+  'DOORWAY BODYWEIGHT ROWS': {
+    beginner: {
+      earlyWeeks: {
+        name: 'STANDING DOORWAY UPRIGHT LEAN ROWS (BEGINNER)',
+        executionSteps: [
+          '1. Setup: Stand close to doorway holding both sides of doorframe with arms bent slightly.',
+          '2. Lean Back 20°: Lean back slightly so body is at a gentle angle.',
+          '3. Pull & Squeeze: Pull chest forward toward doorframe by driving elbows back and squeezing shoulder blades.'
+        ],
+        restTime: '60-75 seconds'
+      },
+      lateWeeks: {
+        name: 'MID-ANGLE DOORWAY BODYWEIGHT ROWS',
+        executionSteps: [
+          '1. Walk feet forward slightly to steepen lean angle to 35-40°, pull chest firmly between frame.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'DOORWAY BODYWEIGHT ROWS',
+        executionSteps: [
+          '1. Feet walked forward under frame at 45° angle, pull chest fully between frame with lats.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'DEEP INCLINE / TABLE INVERTED ROWS',
+        executionSteps: [
+          '1. Lie under sturdy dining table, grip edge, pull chest up to table underside.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'TABLE / TOWEL INVERTED BODYWEIGHT ROWS',
+        executionSteps: [
+          '1. Horizontal inverted rows with body parallel to floor or feet elevated.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'STRICT PULLUPS / CHINUPS / SINGLE-ARM ASSISTED ROWS',
+        executionSteps: [
+          '1. High tension pullups or feet-elevated inverted rows.'
+        ],
+        restTime: '45-60 seconds'
+      }
+    }
+  },
+
+  'RAPID MOUNTAIN CLIMBERS': {
+    beginner: {
+      earlyWeeks: {
+        name: 'ELEVATED CHAIR SLOW KNEE DRIVES (BEGINNER)',
+        executionSteps: [
+          '1. Setup: Place hands on sturdy chair seat or bed edge in elevated plank position.',
+          '2. Controlled Drive: Slowly bring right knee toward chest, hold 1 second, step back.',
+          '3. Alternate: Bring left knee to chest slowly without bouncing hips.'
+        ],
+        restTime: '60-75 seconds'
+      },
+      lateWeeks: {
+        name: 'FLOOR SLOW MOUNTAIN CLIMBERS',
+        executionSteps: [
+          '1. High plank on floor, driving knees forward in controlled rhythm.'
+        ],
+        restTime: '60 seconds'
+      }
+    },
+    intermediate: {
+      earlyWeeks: {
+        name: 'RAPID MOUNTAIN CLIMBERS',
+        executionSteps: [
+          '1. High plank position, driving knees toward chest in running tempo.'
+        ],
+        restTime: '60 seconds'
+      },
+      lateWeeks: {
+        name: 'CROSS-BODY RAPID MOUNTAIN CLIMBERS',
+        executionSteps: [
+          '1. Drive right knee toward left elbow and left knee toward right elbow in rapid tempo.'
+        ],
+        restTime: '45 seconds'
+      }
+    },
+    advanced: {
+      earlyWeeks: {
+        name: 'CROSS-BODY SPEED MOUNTAIN CLIMBERS',
+        executionSteps: [
+          '1. Maximal velocity cross-body knee drives maintaining low plank hips.'
+        ],
+        restTime: '45 seconds'
+      },
+      lateWeeks: {
+        name: 'SPIDERMAN PLANK / EXPLOSIVE MOUNTAIN CLIMBERS',
+        executionSteps: [
+          '1. High frequency explosive climbers combined with wide knee drives.'
+        ],
+        restTime: '30-45 seconds'
+      }
+    }
+  }
+};
+
+export interface ExerciseOverloadRecord {
+  completionsCount?: number;
+  userMultiplier?: number;
+  userExtraSets?: number;
+  userExtraReps?: number;
+}
+
+// Progressive Overload & Difficulty Scaling Engine
 export function scaleExerciseForWeek(
   ex: ExerciseItem,
   week: number = 1,
-  experienceLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner'
-): ExerciseItem & { scaledSets: number; scaledReps: number; weekPhaseLabel: string } {
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner',
+  overloadRecord?: ExerciseOverloadRecord,
+  globalDifficultyMultiplier: number = 1.0
+): ExerciseItem & { 
+  scaledSets: number; 
+  scaledReps: number; 
+  scaledDuration: number;
+  weekPhaseLabel: string; 
+  difficultyLabel: string;
+  autoOverloadPercent: number;
+  totalDifficultyMultiplier: number;
+  completionsCount: number;
+  userMultiplier: number;
+} {
   const enriched = enrichExercise(ex);
-  const baseSets = enriched.defaultSets || 3;
-  const baseReps = enriched.targetReps || 10;
+  const cleanWeek = Math.max(1, Math.min(8, week));
+  const isLateWeeks = cleanWeek >= 5;
 
-  let baseLevelFactor = 0.65;
-  if (experienceLevel === 'intermediate') baseLevelFactor = 0.85;
-  if (experienceLevel === 'advanced') baseLevelFactor = 1.00;
+  // 1. Determine Exercise Variant (Name, Steps, Rest)
+  let exerciseName = enriched.name;
+  let steps = enriched.executionSteps;
+  let formTips = enriched.formTips;
+  let customRest = enriched.restTime;
 
-  const weekGrowth = (Math.max(1, Math.min(8, week)) - 1) * 0.085;
-  const multiplier = baseLevelFactor + weekGrowth;
+  const key = enriched.name.toUpperCase();
+  const variantData = EXERCISE_DIFFICULTY_VARIANTS[key];
 
-  let scaledReps = Math.max(4, Math.round(baseReps * multiplier));
-  let scaledSets = baseSets;
-
-  if (week <= 2 && experienceLevel === 'beginner') {
-    scaledSets = Math.max(2, baseSets - 1);
-  } else if (week >= 6) {
-    scaledSets = baseSets + 1;
+  if (variantData) {
+    const levelObj = variantData[experienceLevel] || variantData.beginner;
+    const variant = isLateWeeks ? levelObj.lateWeeks : levelObj.earlyWeeks;
+    exerciseName = variant.name;
+    steps = variant.executionSteps || steps;
+    formTips = variant.formTips || formTips;
+    customRest = variant.restTime || customRest;
+  } else if (experienceLevel === 'beginner') {
+    // Generic fallback variant transformation for beginner
+    if (cleanWeek <= 4) {
+      exerciseName = `BEGINNER MODIFIED: ${enriched.name}`;
+      steps = [
+        `1. Beginner Setup: Position yourself with lightweight or assisted posture.`,
+        `2. Controlled Movement: Perform movement smoothly with full breath control.`,
+        `3. Pause: Pause 1s at peak and return under 2s control.`
+      ];
+    }
+  } else if (experienceLevel === 'advanced' && isLateWeeks) {
+    exerciseName = `TEMPO OVERLOAD: ${enriched.name}`;
   }
 
-  let weekPhaseLabel = '🌱 Week 1: Foundation Phase (Entry Level)';
-  if (week === 2) weekPhaseLabel = '🌱 Week 2: Form Consolidation (+1 Rep)';
-  else if (week === 3) weekPhaseLabel = '📈 Week 3: Progressive Overload (+2 Reps)';
-  else if (week === 4) weekPhaseLabel = '⚡ Week 4: Intensity Baseline';
-  else if (week === 5) weekPhaseLabel = '🔥 Week 5: Hypertrophy Overload (+1 Set)';
-  else if (week === 6) weekPhaseLabel = '🔥 Week 6: Capacity Push';
-  else if (week === 7) weekPhaseLabel = '🚀 Week 7: Peak Resistance';
-  else if (week === 8) weekPhaseLabel = '🏆 Week 8: Master Performance Peak';
+  // 2. Progressive Overload Base Sets & Reps Scaling Table over Weeks 1-8
+  let baseSets = 3;
+  let baseReps = 10;
+
+  if (experienceLevel === 'beginner') {
+    // Gentle entry -> Progressive build
+    if (cleanWeek === 1) { baseSets = 2; baseReps = 8; customRest = customRest || '80 seconds'; }
+    else if (cleanWeek === 2) { baseSets = 2; baseReps = 10; customRest = customRest || '75 seconds'; }
+    else if (cleanWeek === 3) { baseSets = 3; baseReps = 10; customRest = customRest || '70 seconds'; }
+    else if (cleanWeek === 4) { baseSets = 3; baseReps = 12; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 5) { baseSets = 3; baseReps = 12; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 6) { baseSets = 3; baseReps = 14; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 7) { baseSets = 4; baseReps = 12; customRest = customRest || '50 seconds'; }
+    else { baseSets = 4; baseReps = 15; customRest = customRest || '45 seconds'; }
+  } else if (experienceLevel === 'intermediate') {
+    // Standard progression
+    if (cleanWeek === 1) { baseSets = 3; baseReps = 10; customRest = customRest || '75 seconds'; }
+    else if (cleanWeek === 2) { baseSets = 3; baseReps = 12; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 3) { baseSets = 3; baseReps = 14; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 4) { baseSets = 4; baseReps = 12; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 5) { baseSets = 4; baseReps = 14; customRest = customRest || '50 seconds'; }
+    else if (cleanWeek === 6) { baseSets = 4; baseReps = 15; customRest = customRest || '45 seconds'; }
+    else if (cleanWeek === 7) { baseSets = 4; baseReps = 16; customRest = customRest || '45 seconds'; }
+    else { baseSets = 4; baseReps = 18; customRest = customRest || '45 seconds'; }
+  } else {
+    // Advanced Athletic Overload
+    if (cleanWeek === 1) { baseSets = 3; baseReps = 12; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 2) { baseSets = 3; baseReps = 15; customRest = customRest || '60 seconds'; }
+    else if (cleanWeek === 3) { baseSets = 4; baseReps = 15; customRest = customRest || '50 seconds'; }
+    else if (cleanWeek === 4) { baseSets = 4; baseReps = 16; customRest = customRest || '45 seconds'; }
+    else if (cleanWeek === 5) { baseSets = 4; baseReps = 18; customRest = customRest || '45 seconds'; }
+    else if (cleanWeek === 6) { baseSets = 4; baseReps = 20; customRest = customRest || '40 seconds'; }
+    else if (cleanWeek === 7) { baseSets = 5; baseReps = 18; customRest = customRest || '35 seconds'; }
+    else { baseSets = 5; baseReps = 20; customRest = customRest || '30 seconds'; }
+  }
+
+  // Preserve relative scale for heavy compound exercises with lower default reps
+  if (enriched.targetReps && enriched.targetReps < 8) {
+    const ratio = enriched.targetReps / 10;
+    baseReps = Math.max(3, Math.round(baseReps * ratio));
+  }
+
+  // 3. Completion History Auto-Overload Calculation (+5% per completion)
+  const completionsCount = overloadRecord?.completionsCount || 0;
+  const autoOverloadFactor = 1 + (completionsCount * 0.05); // +5% per completion
+  const autoOverloadPercent = Math.round((autoOverloadFactor - 1) * 100);
+
+  // 4. Editable Multipliers (Manual User Multiplier & Global Difficulty Multiplier)
+  const userMultiplier = overloadRecord?.userMultiplier ?? 1.0;
+  const cleanGlobalMult = Math.max(0.4, Math.min(3.0, globalDifficultyMultiplier));
+  const totalDifficultyMultiplier = Number((autoOverloadFactor * userMultiplier * cleanGlobalMult).toFixed(2));
+
+  // Compute final scaled parameters
+  const userExtraSets = overloadRecord?.userExtraSets || 0;
+  const userExtraReps = overloadRecord?.userExtraReps || 0;
+
+  const scaledReps = Math.max(1, Math.round(baseReps * totalDifficultyMultiplier)) + userExtraReps;
+  const scaledSets = Math.max(1, Math.round(baseSets * Math.min(1.6, Math.sqrt(totalDifficultyMultiplier)))) + userExtraSets;
+  const scaledDuration = Math.max(5, Math.round((enriched.duration || 10) * totalDifficultyMultiplier));
+
+  // Labels for UI clarity
+  let weekPhaseLabel = `🌱 Week ${cleanWeek}: Entry Foundation`;
+  if (cleanWeek === 2) weekPhaseLabel = `🌱 Week 2: Form Consolidation`;
+  else if (cleanWeek === 3) weekPhaseLabel = `📈 Week 3: Progressive Overload (+Volume)`;
+  else if (cleanWeek === 4) weekPhaseLabel = `⚡ Week 4: Intensity Baseline`;
+  else if (cleanWeek === 5) weekPhaseLabel = `🔥 Week 5: Hypertrophy Phase (+1 Variation)`;
+  else if (cleanWeek === 6) weekPhaseLabel = `🔥 Week 6: Capacity Push`;
+  else if (cleanWeek === 7) weekPhaseLabel = `🚀 Week 7: Peak Resistance`;
+  else if (cleanWeek === 8) weekPhaseLabel = `🏆 Week 8: Master Performance Peak`;
+
+  const difficultyLabel = experienceLevel === 'beginner'
+    ? '🌱 BEGINNER LEVEL (ACCESSIBLE ADAPTATION)'
+    : experienceLevel === 'intermediate'
+    ? '⚡ INTERMEDIATE LEVEL (STANDARD)'
+    : '🔥 ADVANCED LEVEL (HIGH INTENSITY)';
 
   return {
     ...enriched,
+    name: exerciseName,
+    executionSteps: steps,
+    formTips,
+    restTime: customRest,
     defaultSets: scaledSets,
     targetReps: scaledReps,
+    duration: scaledDuration,
     scaledSets,
     scaledReps,
-    weekPhaseLabel
+    scaledDuration,
+    weekPhaseLabel,
+    difficultyLabel,
+    autoOverloadPercent,
+    totalDifficultyMultiplier,
+    completionsCount,
+    userMultiplier
   };
 }
 
