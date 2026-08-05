@@ -6,7 +6,7 @@ import {
   Dumbbell, Play, CheckCircle, Clock, Flame, Plus, Trash2, Award, 
   Sparkles, RotateCcw, BarChart3, ChevronRight, ChevronLeft, Save, 
   Layers, Search, Filter, Calendar, Zap, Check, ArrowRight, Activity, ShieldAlert, HeartPulse, Scale, UserCheck,
-  BookOpen, Info, X, Target, ShieldCheck, CheckSquare, Dumbbell as GymIcon, Cpu, RefreshCw, HelpCircle
+  BookOpen, Info, X, Target, ShieldCheck, CheckSquare, Dumbbell as GymIcon, Cpu, RefreshCw, HelpCircle, Sliders
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
@@ -17,7 +17,8 @@ import {
   WorkoutPlanItem,
   enrichExercise,
   scaleExerciseForWeek,
-  MASTER_EXERCISE_GUIDES
+  MASTER_EXERCISE_GUIDES,
+  ExerciseOverloadRecord
 } from '../data/workoutPrograms';
 
 export type { ExerciseItem, WorkoutDayItem, WorkoutPlanItem };
@@ -52,10 +53,81 @@ export function TrainingView() {
   const [smartCoachTopic, setSmartCoachTopic] = useState<'scaling' | 'knee_safety' | 'progression' | 'breathing' | null>(null);
 
   // Week Selector State for Long-Term Programs (1 to 2 Months)
-  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [selectedWeek, setSelectedWeek] = useState<number>(() => {
+    const saved = localStorage.getItem('user_training_selected_week');
+    return saved ? Math.max(1, Math.min(8, Number(saved))) : 1;
+  });
 
   // Fitness Experience Level State for Progressive Load Customization
-  const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced'>(() => {
+    const saved = localStorage.getItem('user_experience_level');
+    if (saved === 'intermediate' || saved === 'advanced') return saved;
+    return 'beginner';
+  });
+
+  // Progressive Overload Completion History & Editable Difficulty State
+  const [exerciseOverloadMap, setExerciseOverloadMap] = useState<Record<string, ExerciseOverloadRecord>>(() => {
+    try {
+      const saved = localStorage.getItem('user_exercise_overload_tracker');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  const [globalDifficultyMultiplier, setGlobalDifficultyMultiplier] = useState<number>(() => {
+    const saved = localStorage.getItem('user_global_difficulty_multiplier');
+    return saved ? Math.max(0.4, Math.min(3.0, Number(saved))) : 1.0;
+  });
+
+  const [editingExerciseName, setEditingExerciseName] = useState<string | null>(null);
+
+  const handleSetGlobalDifficultyMultiplier = (val: number) => {
+    const clean = Math.max(0.4, Math.min(3.0, Number(val.toFixed(2))));
+    setGlobalDifficultyMultiplier(clean);
+    localStorage.setItem('user_global_difficulty_multiplier', String(clean));
+  };
+
+  const handleUpdateExerciseOverload = (exName: string, updates: Partial<ExerciseOverloadRecord>) => {
+    const key = exName.toUpperCase();
+    setExerciseOverloadMap(prev => {
+      const current = prev[key] || { completionsCount: 0, userMultiplier: 1.0, userExtraSets: 0, userExtraReps: 0 };
+      const updated = { ...current, ...updates };
+      const newMap = { ...prev, [key]: updated };
+      localStorage.setItem('user_exercise_overload_tracker', JSON.stringify(newMap));
+      return newMap;
+    });
+  };
+
+  const handleResetAllOverload = () => {
+    if (confirm("Reset all progressive overload completion history and custom exercise difficulty settings?")) {
+      setExerciseOverloadMap({});
+      setGlobalDifficultyMultiplier(1.0);
+      localStorage.removeItem('user_exercise_overload_tracker');
+      localStorage.removeItem('user_global_difficulty_multiplier');
+    }
+  };
+
+  const getScaledExercise = React.useCallback((exRaw: ExerciseItem) => {
+    const overloadRecord = exerciseOverloadMap[exRaw.name.toUpperCase()];
+    return scaleExerciseForWeek(
+      exRaw,
+      selectedWeek,
+      experienceLevel,
+      overloadRecord,
+      globalDifficultyMultiplier
+    );
+  }, [exerciseOverloadMap, selectedWeek, experienceLevel, globalDifficultyMultiplier]);
+
+  const handleSetExperienceLevel = (lvl: 'beginner' | 'intermediate' | 'advanced') => {
+    setExperienceLevel(lvl);
+    localStorage.setItem('user_experience_level', lvl);
+  };
+
+  const handleSetSelectedWeek = (w: number) => {
+    setSelectedWeek(w);
+    localStorage.setItem('user_training_selected_week', String(w));
+  };
 
   // Sync state automatically when userStats or latestVessel changes
   useEffect(() => {
@@ -287,10 +359,10 @@ export function TrainingView() {
     setIsWorkoutActive(true);
     setIsResting(false);
 
-    // Initialize set tracker with progressive week and experience level scaling
+    // Initialize set tracker with progressive week, completion history, and experience level scaling
     const initialSets: Record<number, Array<{ weight: number; reps: number; completed: boolean }>> = {};
     dayToRun.exercises.forEach((ex, idx) => {
-      const scaledEx = scaleExerciseForWeek(ex, selectedWeek, experienceLevel);
+      const scaledEx = getScaledExercise(ex);
       const numSets = scaledEx.scaledSets || 3;
       initialSets[idx] = Array.from({ length: numSets }, () => ({
         weight: 0,
@@ -358,6 +430,32 @@ export function TrainingView() {
 
     totalCalories = Math.round(totalCalories || 200);
     const totalXp = Math.round(totalCalories * 2 + 300);
+
+    // Progressive Overload Completion Engine: Automatically increase difficulty by +5% per completed session for completed exercises
+    setExerciseOverloadMap(prev => {
+      const updated = { ...prev };
+      let hasChanges = false;
+
+      activeDay.exercises.forEach((ex, exIdx) => {
+        const sets = completedSets[exIdx] || [];
+        const completedCount = sets.filter(s => s.completed).length;
+
+        if (completedCount > 0) {
+          const key = ex.name.toUpperCase();
+          const currentRec = updated[key] || { completionsCount: 0, userMultiplier: 1.0, userExtraSets: 0, userExtraReps: 0 };
+          updated[key] = {
+            ...currentRec,
+            completionsCount: (currentRec.completionsCount || 0) + 1
+          };
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        localStorage.setItem('user_exercise_overload_tracker', JSON.stringify(updated));
+      }
+      return updated;
+    });
 
     // Save logs to Dexie DB
     for (const ex of activeDay.exercises) {
@@ -783,6 +881,41 @@ export function TrainingView() {
               </div>
             </div>
 
+            {/* DIFFICULTY & EXPERIENCE LEVEL SELECTOR */}
+            <div className="space-y-2 pt-2 border-t border-[#1F1F1F]">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-cyan-400" />
+                  FITNESS EXPERIENCE LEVEL (EXERCISE HARDNESS & VARIANT):
+                </span>
+                <span className="text-[10px] font-mono text-[#888] uppercase">
+                  ACTIVE: <strong className="text-emerald-400">{experienceLevel.toUpperCase()}</strong>
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 text-xs font-mono">
+                {(['beginner', 'intermediate', 'advanced'] as const).map((lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => handleSetExperienceLevel(lvl)}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-sm border font-bold uppercase transition-all text-xs flex items-center gap-1.5",
+                      experienceLevel === lvl
+                        ? lvl === 'beginner'
+                          ? "bg-emerald-500 text-black border-emerald-400 shadow-sm"
+                          : lvl === 'intermediate'
+                          ? "bg-cyan-500 text-black border-cyan-400 shadow-sm"
+                          : "bg-amber-500 text-black border-amber-400 shadow-sm"
+                        : "bg-[#141414] text-[#A3A3A3] border-[#262626] hover:text-white"
+                    )}
+                  >
+                    {lvl === 'beginner' && '🌱 BEGINNER (WALL/KNEE ASSISTED & EASY REPS)'}
+                    {lvl === 'intermediate' && '⚡ INTERMEDIATE (STANDARD FLOOR FORM)'}
+                    {lvl === 'advanced' && '🔥 ADVANCED (EXPLOSIVE / ATHLETIC OVERLOAD)'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* GOAL FILTER PILLS */}
             <div className="space-y-2 pt-2 border-t border-[#1F1F1F]">
               <span className="text-xs font-mono text-[#A3A3A3] uppercase block">FILTER BY FITNESS GOAL:</span>
@@ -934,7 +1067,7 @@ export function TrainingView() {
                 {(['beginner', 'intermediate', 'advanced'] as const).map((lvl) => (
                   <button
                     key={lvl}
-                    onClick={() => setExperienceLevel(lvl)}
+                    onClick={() => handleSetExperienceLevel(lvl)}
                     className={cn(
                       "flex-1 sm:flex-initial px-3 py-1 text-xs font-mono font-bold uppercase rounded-sm border transition-all",
                       experienceLevel === lvl
@@ -954,7 +1087,7 @@ export function TrainingView() {
               </div>
             </div>
 
-            {/* Week Stepper Bar */}
+            {/* WEEK STEPPER BAR */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 pt-1">
               <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-emerald-400" />
@@ -969,7 +1102,7 @@ export function TrainingView() {
               {Array.from({ length: currentSelectedPlan.durationWeeks || 8 }, (_, i) => i + 1).map(w => (
                 <button
                   key={w}
-                  onClick={() => setSelectedWeek(w)}
+                  onClick={() => handleSetSelectedWeek(w)}
                   className={cn(
                     "px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-sm border transition-all flex items-center gap-1",
                     selectedWeek === w
@@ -982,6 +1115,109 @@ export function TrainingView() {
                   {w === 8 && <span className="text-[9px] opacity-80">(Peak)</span>}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* AUTOMATED PROGRESSIVE OVERLOAD & EDITABLE DIFFICULTY ENGINE PANEL */}
+          <div className="bg-[#0E1520] border border-cyan-500/50 rounded-sm p-4 space-y-3 font-mono">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-cyan-900/60 pb-2.5">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                    AUTOMATED PROGRESSIVE OVERLOAD ENGINE (+5% PER LOGGED COMPLETION)
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#A3A3A3]">
+                  Monitors workout completion history. Completing exercises automatically increases target reps, sets & duration by +5% for future sessions. Fully editable below.
+                </p>
+              </div>
+
+              <button
+                onClick={handleResetAllOverload}
+                className="px-2.5 py-1 bg-[#1A1A1A] hover:bg-rose-950 border border-[#333] hover:border-rose-800 text-rose-300 text-[10px] uppercase font-bold rounded-sm transition-all flex items-center gap-1 flex-shrink-0"
+              >
+                <RotateCcw className="w-3 h-3 text-rose-400" /> RESET OVERLOAD HISTORY
+              </button>
+            </div>
+
+            {/* Global Difficulty Control Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="space-y-1.5 bg-[#121212] p-2.5 rounded-sm border border-[#262626]">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-cyan-400 font-bold uppercase flex items-center gap-1">
+                    <Scale className="w-3.5 h-3.5 text-cyan-400" /> GLOBAL DIFFICULTY MULTIPLIER:
+                  </span>
+                  <span className="text-emerald-400 font-bold text-sm font-mono">
+                    {globalDifficultyMultiplier.toFixed(2)}x
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSetGlobalDifficultyMultiplier(globalDifficultyMultiplier - 0.05)}
+                    className="px-2 py-1 bg-[#1A1A1A] hover:bg-[#262626] text-white border border-[#333] rounded-sm font-bold text-xs"
+                  >
+                    -0.05
+                  </button>
+
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.5"
+                    step="0.05"
+                    value={globalDifficultyMultiplier}
+                    onChange={(e) => handleSetGlobalDifficultyMultiplier(Number(e.target.value))}
+                    className="w-full accent-cyan-400 cursor-pointer h-1.5 bg-[#262626] rounded-lg"
+                  />
+
+                  <button
+                    onClick={() => handleSetGlobalDifficultyMultiplier(globalDifficultyMultiplier + 0.05)}
+                    className="px-2 py-1 bg-[#1A1A1A] hover:bg-[#262626] text-white border border-[#333] rounded-sm font-bold text-xs"
+                  >
+                    +0.05
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-1 text-[10px] pt-1">
+                  {[
+                    { label: '0.80x (Light)', val: 0.8 },
+                    { label: '1.00x (Normal)', val: 1.0 },
+                    { label: '1.25x (Intense)', val: 1.25 },
+                    { label: '1.50x (Beast)', val: 1.5 }
+                  ].map(p => (
+                    <button
+                      key={p.val}
+                      onClick={() => handleSetGlobalDifficultyMultiplier(p.val)}
+                      className={cn(
+                        "px-2 py-0.5 rounded-sm border uppercase transition-all font-bold",
+                        Math.abs(globalDifficultyMultiplier - p.val) < 0.02
+                          ? "bg-cyan-500 text-black border-cyan-400"
+                          : "bg-[#1A1A1A] text-[#A3A3A3] border-[#333] hover:text-white"
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5 bg-[#121212] p-2.5 rounded-sm border border-[#262626] text-xs">
+                <span className="text-emerald-400 font-bold uppercase flex items-center gap-1">
+                  <Activity className="w-3.5 h-3.5 text-emerald-400" /> ACTIVE OVERLOAD STATUS:
+                </span>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                  <div className="bg-[#181818] p-1.5 rounded-sm border border-[#222]">
+                    <span className="text-[#888] block text-[9px] uppercase">TRACKED EXERCISES</span>
+                    <span className="text-white font-bold">{Object.keys(exerciseOverloadMap).length} Logged</span>
+                  </div>
+                  <div className="bg-[#181818] p-1.5 rounded-sm border border-[#222]">
+                    <span className="text-[#888] block text-[9px] uppercase">AUTO-SCALE STEP</span>
+                    <span className="text-emerald-400 font-bold">+5% Per Completed Workout</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1049,20 +1285,27 @@ export function TrainingView() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentSelectedDay.exercises.map((exRaw, exIdx) => {
-                    const ex = scaleExerciseForWeek(exRaw, selectedWeek, experienceLevel);
+                    const ex = getScaledExercise(exRaw);
                     return (
                       <div key={exIdx} className="bg-[#181818] border border-[#262626] p-3.5 rounded-sm space-y-2 min-w-0 flex flex-col justify-between">
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-start gap-2">
                             <span className="text-xs font-mono font-bold text-white uppercase truncate">{ex.name}</span>
-                            <span className="px-2 py-0.5 bg-cyan-950/60 text-cyan-300 text-[10px] font-mono rounded-sm border border-cyan-900/50 uppercase flex-shrink-0">
-                              {ex.muscleGroup}
-                            </span>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {ex.autoOverloadPercent && ex.autoOverloadPercent > 0 ? (
+                                <span className="px-1.5 py-0.5 bg-emerald-950 text-emerald-400 text-[9px] font-mono font-bold rounded-sm border border-emerald-800 uppercase">
+                                  📈 +{ex.autoOverloadPercent}% OVERLOAD ({ex.completionsCount}x)
+                                </span>
+                              ) : null}
+                              <span className="px-2 py-0.5 bg-cyan-950/60 text-cyan-300 text-[10px] font-mono rounded-sm border border-cyan-900/50 uppercase">
+                                {ex.muscleGroup}
+                              </span>
+                            </div>
                           </div>
 
                           <div className="text-[11px] font-mono text-[#A3A3A3] flex items-center justify-between pt-1">
                             <span className="text-emerald-400 font-bold">SETS: {ex.scaledSets} × {ex.scaledReps} REPS</span>
-                            <span>~{ex.calories} KCAL</span>
+                            <span className="text-cyan-400 font-bold">⚡ {ex.totalDifficultyMultiplier}x DIFF</span>
                           </div>
 
                           <div className="flex flex-wrap gap-1">
@@ -1083,13 +1326,21 @@ export function TrainingView() {
                           )}
                         </div>
 
-                        {/* Interactive Execution Guide Launcher Button */}
-                        <button
-                          onClick={() => setGuideExercise(ex)}
-                          className="w-full py-1.5 bg-[#222] hover:bg-cyan-950 border border-[#333] hover:border-cyan-500 text-cyan-300 text-[11px] font-mono font-bold uppercase rounded-sm transition-all flex items-center justify-center gap-1.5 mt-2"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> VIEW FORM & REGRESSION GUIDE
-                        </button>
+                        {/* Interactive Form Guide & Difficulty Tuner Action Bar */}
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <button
+                            onClick={() => setGuideExercise(ex)}
+                            className="w-full py-1.5 bg-[#222] hover:bg-cyan-950 border border-[#333] hover:border-cyan-500 text-cyan-300 text-[10px] font-mono font-bold uppercase rounded-sm transition-all flex items-center justify-center gap-1"
+                          >
+                            <BookOpen className="w-3 h-3 text-cyan-400" /> FORM GUIDE
+                          </button>
+                          <button
+                            onClick={() => setEditingExerciseName(exRaw.name)}
+                            className="w-full py-1.5 bg-[#1E1B0E] hover:bg-amber-950 border border-amber-800/80 text-amber-300 text-[10px] font-mono font-bold uppercase rounded-sm transition-all flex items-center justify-center gap-1"
+                          >
+                            <Sliders className="w-3 h-3 text-amber-400" /> TWEAK DIFFICULTY
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1172,7 +1423,7 @@ export function TrainingView() {
               {/* List of Exercises for the Day */}
               <div className="space-y-4">
                 {activeDay?.exercises.map((exRaw, exIdx) => {
-                  const ex = scaleExerciseForWeek(exRaw, selectedWeek, experienceLevel);
+                  const ex = getScaledExercise(exRaw);
                   const sets = completedSets[exIdx] || [];
 
                   return (
@@ -1186,12 +1437,24 @@ export function TrainingView() {
                             <span className="px-1.5 py-0.5 bg-[#141414] border border-[#262626] text-[10px] font-mono text-[#A3A3A3] uppercase rounded-sm truncate">
                               {ex.muscleGroup}
                             </span>
+                            {ex.autoOverloadPercent && ex.autoOverloadPercent > 0 ? (
+                              <span className="px-1.5 py-0.5 bg-emerald-950 text-emerald-400 text-[9px] font-mono font-bold rounded-sm border border-emerald-800 uppercase">
+                                📈 +{ex.autoOverloadPercent}% OVERLOAD ({ex.completionsCount}x)
+                              </span>
+                            ) : null}
                           </div>
                           <h4 className="text-base sm:text-lg font-mono text-white font-bold uppercase mt-0.5 truncate">{ex.name}</h4>
                           {ex.details && <p className="text-xs font-mono text-amber-400 mt-0.5 truncate">{ex.details}</p>}
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditingExerciseName(exRaw.name)}
+                            className="px-2 py-1 bg-[#1E1B0E] hover:bg-amber-950 border border-amber-800 text-amber-300 text-xs font-mono font-bold uppercase rounded-sm flex items-center gap-1"
+                          >
+                            <Sliders className="w-3.5 h-3.5" /> TWEAK DIFF
+                          </button>
+
                           <button
                             onClick={() => setGuideExercise(ex)}
                             className="px-2.5 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 text-xs font-mono font-bold uppercase rounded-sm flex items-center gap-1"
@@ -1623,6 +1886,172 @@ export function TrainingView() {
           </div>
         </div>
       )}
+
+      {/* EXERCISE DIFFICULTY CUSTOMIZATION TUNER MODAL */}
+      {editingExerciseName && (() => {
+        const key = editingExerciseName.toUpperCase();
+        const currentRec = exerciseOverloadMap[key] || { completionsCount: 0, userMultiplier: 1.0, userExtraSets: 0, userExtraReps: 0 };
+        const baseEx: ExerciseItem = enrichExercise({ name: editingExerciseName, muscleGroup: 'core', calories: 20, duration: 30 });
+        const scaledPreview = scaleExerciseForWeek(baseEx, selectedWeek, experienceLevel, currentRec, globalDifficultyMultiplier);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#0D0D0D] border border-amber-500/70 rounded-sm w-full max-w-lg p-5 space-y-5 font-mono text-xs shadow-2xl relative">
+              <div className="flex justify-between items-start border-b border-[#262626] pb-3 gap-2">
+                <div>
+                  <span className="text-[10px] text-amber-400 font-bold uppercase block">EXERCISE DIFFICULTY TUNER</span>
+                  <h3 className="text-base font-bold text-white uppercase">{editingExerciseName}</h3>
+                </div>
+                <button
+                  onClick={() => setEditingExerciseName(null)}
+                  className="p-1 bg-[#1A1A1A] hover:bg-[#262626] text-[#A3A3A3] hover:text-white rounded-sm border border-[#333]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scaled Result Live Preview Box */}
+              <div className="bg-[#141B15] border border-emerald-500/40 p-3 rounded-sm space-y-1">
+                <span className="text-[10px] text-emerald-300 font-bold uppercase block">SCALED RESULT PREVIEW FOR WEEK {selectedWeek}:</span>
+                <div className="flex items-center justify-between text-sm text-white font-bold">
+                  <span>{scaledPreview.scaledSets} SETS × {scaledPreview.scaledReps} REPS</span>
+                  <span className="text-amber-400">MULTIPLIER: {scaledPreview.totalDifficultyMultiplier}x</span>
+                </div>
+                <div className="text-[10px] text-[#A3A3A3]">
+                  Auto-Overload Boost: +{scaledPreview.autoOverloadPercent}% ({scaledPreview.completionsCount} Completed Sessions)
+                </div>
+              </div>
+
+              {/* Editable Controls */}
+              <div className="space-y-4">
+                {/* 1. Completion History Stepper (+5% per completion) */}
+                <div className="space-y-1.5 bg-[#141414] p-3 rounded-sm border border-[#262626]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold uppercase">COMPLETION HISTORY (+5% PER COUNT):</span>
+                    <span className="text-emerald-400 font-bold">{currentRec.completionsCount || 0} COMPLETED</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleUpdateExerciseOverload(editingExerciseName, { completionsCount: Math.max(0, (currentRec.completionsCount || 0) - 1) })}
+                      className="px-3 py-1 bg-[#222] hover:bg-[#333] text-white border border-[#444] rounded-sm font-bold"
+                    >
+                      -1 WORKOUT (-5%)
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      value={currentRec.completionsCount || 0}
+                      onChange={(e) => handleUpdateExerciseOverload(editingExerciseName, { completionsCount: Math.max(0, Number(e.target.value)) })}
+                      className="w-full bg-[#0A0A0A] border border-[#333] text-center font-bold text-white py-1 rounded-sm"
+                    />
+                    <button
+                      onClick={() => handleUpdateExerciseOverload(editingExerciseName, { completionsCount: (currentRec.completionsCount || 0) + 1 })}
+                      className="px-3 py-1 bg-[#222] hover:bg-[#333] text-white border border-[#444] rounded-sm font-bold"
+                    >
+                      +1 WORKOUT (+5%)
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Custom Exercise Difficulty Multiplier */}
+                <div className="space-y-1.5 bg-[#141414] p-3 rounded-sm border border-[#262626]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-bold uppercase">CUSTOM EXERCISE MULTIPLIER:</span>
+                    <span className="text-amber-400 font-bold">{(currentRec.userMultiplier ?? 1.0).toFixed(2)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.5"
+                    step="0.05"
+                    value={currentRec.userMultiplier ?? 1.0}
+                    onChange={(e) => handleUpdateExerciseOverload(editingExerciseName, { userMultiplier: Number(e.target.value) })}
+                    className="w-full accent-amber-400 cursor-pointer h-1.5 bg-[#262626] rounded-lg"
+                  />
+                  <div className="flex gap-1.5 pt-1">
+                    {[0.8, 1.0, 1.25, 1.5, 2.0].map(m => (
+                      <button
+                        key={m}
+                        onClick={() => handleUpdateExerciseOverload(editingExerciseName, { userMultiplier: m })}
+                        className={cn(
+                          "flex-1 py-1 text-[10px] font-bold uppercase rounded-sm border",
+                          Math.abs((currentRec.userMultiplier ?? 1.0) - m) < 0.02
+                            ? "bg-amber-500 text-black border-amber-400"
+                            : "bg-[#222] text-[#AAA] border-[#333]"
+                        )}
+                      >
+                        {m}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Sets & Reps Direct Offsets */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#141414] p-3 rounded-sm border border-[#262626] space-y-1">
+                    <span className="text-[#AAA] text-[10px] block uppercase font-bold">TARGET SETS OFFSET</span>
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => handleUpdateExerciseOverload(editingExerciseName, { userExtraSets: (currentRec.userExtraSets || 0) - 1 })}
+                        className="px-2.5 py-1 bg-[#222] text-white rounded-sm font-bold border border-[#333]"
+                      >
+                        -1
+                      </button>
+                      <span className="text-white font-bold text-sm">
+                        {currentRec.userExtraSets ? (currentRec.userExtraSets > 0 ? `+${currentRec.userExtraSets}` : currentRec.userExtraSets) : '0'}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateExerciseOverload(editingExerciseName, { userExtraSets: (currentRec.userExtraSets || 0) + 1 })}
+                        className="px-2.5 py-1 bg-[#222] text-white rounded-sm font-bold border border-[#333]"
+                      >
+                        +1
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#141414] p-3 rounded-sm border border-[#262626] space-y-1">
+                    <span className="text-[#AAA] text-[10px] block uppercase font-bold">TARGET REPS OFFSET</span>
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => handleUpdateExerciseOverload(editingExerciseName, { userExtraReps: (currentRec.userExtraReps || 0) - 1 })}
+                        className="px-2.5 py-1 bg-[#222] text-white rounded-sm font-bold border border-[#333]"
+                      >
+                        -1
+                      </button>
+                      <span className="text-white font-bold text-sm">
+                        {currentRec.userExtraReps ? (currentRec.userExtraReps > 0 ? `+${currentRec.userExtraReps}` : currentRec.userExtraReps) : '0'}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateExerciseOverload(editingExerciseName, { userExtraReps: (currentRec.userExtraReps || 0) + 1 })}
+                        className="px-2.5 py-1 bg-[#222] text-white rounded-sm font-bold border border-[#333]"
+                      >
+                        +1
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-[#262626]">
+                <button
+                  onClick={() => {
+                    handleUpdateExerciseOverload(editingExerciseName, { completionsCount: 0, userMultiplier: 1.0, userExtraSets: 0, userExtraReps: 0 });
+                  }}
+                  className="w-1/3 py-2 bg-[#1A1A1A] hover:bg-rose-950 text-rose-300 font-bold uppercase rounded-sm border border-[#333] hover:border-rose-800 text-[10px]"
+                >
+                  RESET EXERCISE
+                </button>
+                <button
+                  onClick={() => setEditingExerciseName(null)}
+                  className="w-2/3 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold uppercase rounded-sm transition-all"
+                >
+                  SAVE & APPLY TUNING
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
